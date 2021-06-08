@@ -56,7 +56,7 @@ def main():
 
     model = CLModel().to(device)
     optimizer = optim.Adam(model.parameters(), lr=config.lr, amsgrad=False)
-    lr_scheduler_func = CosineDecayScheduler(base_lr=10e-6, max_epoch=config.n_epoch)
+    lr_scheduler_func = CosineDecayScheduler(base_lr=1, max_epoch=config.n_epoch)
     lr_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_scheduler_func)
     model.train()
 
@@ -85,7 +85,7 @@ def main():
             loss_epoch += loss.item()
 
             if step % 100 == 0:
-                print(f"Step [{step}/{len(dataloader)}]\t Loss: {loss.item()}")
+                print(f"Step [{step}/{len(dataloader)}]\t Loss: {loss.item()}\t lr: {lr_scheduler.get_lr()}")
 
         print(
             f"Epoch [{epoch}/{n_epoch}]\t Loss: {loss_epoch / len(dataloader)}")

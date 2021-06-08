@@ -17,7 +17,8 @@ class CosineDecayScheduler:
         self.power = power
 
     def __call__(self, epoch: int):
-        return (1 - max(epoch - 1, 1) / self.max_epoch) ** self.power * self.base_lr
+        lr = (1 - max(epoch - 1, 1) / self.max_epoch) ** self.power * self.base_lr
+        return lr
 
 
 if __name__ == '__main__':
