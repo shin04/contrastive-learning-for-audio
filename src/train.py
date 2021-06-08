@@ -1,20 +1,21 @@
-from os import device_encoding
+from datetime import datetime
+from pathlib import Path
+
 import torch
 from torch.utils.data import DataLoader
 import torch.optim as optim
-# import torch.nn.functional as F
 
 import config
 from datasets.audioset import CLDataset
 from models.cl_model import CLModel
-from models.raw_model import Conv160
-from models.spec_model import CNN6
 
-# https://www.youtube.com/watch?v=_1eKr4rbgRI
-# https://colab.research.google.com/drive/1UK8BD3xvTpuSj75blz8hThfXksh19YbA?usp=sharing#scrollTo=GBNm6bbDT9J3
+TIME_TEMPLATE = '%Y%m%d%H%M%S'
 
 
 def nt_xent_loss(q, pos_k, temperature):
+    # https://www.youtube.com/watch?v=_1eKr4rbgRI
+    # https://colab.research.google.com/drive/1UK8BD3xvTpuSj75blz8hThfXksh19YbA?usp=sharing#scrollTo=GBNm6bbDT9J3
+
     out = torch.cat([q, pos_k], dim=0)
     n_samples = len(out)
 
@@ -35,6 +36,9 @@ def nt_xent_loss(q, pos_k, temperature):
 
 
 def main():
+    ts = datetime.now().strftime(TIME_TEMPLATE)
+    result_path = Path('../results') / ts
+
     device = torch.device(config.device)
 
     dataset = CLDataset(
@@ -52,6 +56,8 @@ def main():
 
     n_epoch = config.n_epoch
     temperature = config.temperature
+    best_loss = -1
+
     for epoch in range(n_epoch):
         print(f'epoch: {epoch}')
 
@@ -76,6 +82,13 @@ def main():
 
         print(
             f"Epoch [{epoch}/{n_epoch}]\t Loss: {loss_epoch / len(dataloader)}")
+
+        if best_loss < loss_epoch:
+            best_loss = loss_epoch
+            with open(result_path / 'best.pt', 'wb') as f:
+                torch.save(model.state_dict(), f)
+
+    print(f'complete training: {result_path}')
 
 
 if __name__ == '__main__':
