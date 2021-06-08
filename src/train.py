@@ -8,6 +8,7 @@ import torch.optim as optim
 import config
 from datasets.audioset import CLDataset
 from models.cl_model import CLModel
+from utils.cosine_decay_rule import CosineDecayScheduler
 
 TIME_TEMPLATE = '%Y%m%d%H%M%S'
 
@@ -39,6 +40,9 @@ def main():
     ts = datetime.now().strftime(TIME_TEMPLATE)
     result_path = Path('../results') / ts
 
+    if not result_path.exists():
+        result_path.mkdir(parents=True)
+
     device = torch.device(config.device)
 
     dataset = CLDataset(
@@ -52,6 +56,8 @@ def main():
 
     model = CLModel().to(device)
     optimizer = optim.Adam(model.parameters(), lr=config.lr, amsgrad=False)
+    lr_scheduler_func = CosineDecayScheduler(base_lr=10e-6, max_epoch=config.n_epoch)
+    lr_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_scheduler_func)
     model.train()
 
     n_epoch = config.n_epoch
@@ -73,7 +79,8 @@ def main():
             loss = nt_xent_loss(z_i, z_j, temperature)
 
             loss.backward()
-            optimizer.step()
+            # optimizer.step()
+            lr_scheduler.step(epoch)
 
             loss_epoch += loss.item()
 
