@@ -4,6 +4,7 @@ from pathlib import Path
 import torch
 from torch.utils.data import DataLoader
 import torch.optim as optim
+from torch.utils.tensorboard import SummaryWriter
 
 import config
 from datasets.audioset import CLDataset
@@ -38,32 +39,37 @@ def nt_xent_loss(q, pos_k, temperature):
 
 def main():
     ts = datetime.now().strftime(TIME_TEMPLATE)
-    result_path = Path('../results') / ts
 
+    result_path = Path('../results') / ts
     if not result_path.exists():
         result_path.mkdir(parents=True)
 
+    log_path = Path('../log/tensorboard') / ts
+    if not log_path.exists():
+        log_path.mkdir(parents=True)
+
     device = torch.device(config.device)
+    n_epoch = config.n_epoch
+    temperature = config.temperature
+    lr = config.lr
+    batch_size = config.batch_size
+
+    writer = SummaryWriter(log_dir=log_path)
 
     dataset = CLDataset(
         audio_path=config.audio_path, metadata_path=config.metadata_path,
         q_type='raw', k_type='raw', data_crop_size=3
     )
-    dataloader = DataLoader(
-        dataset, batch_size=config.batch_size,
-        shuffle=True,  pin_memory=True
-    )
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True,  pin_memory=True)
 
     model = CLModel().to(device)
-    optimizer = optim.Adam(model.parameters(), lr=config.lr, amsgrad=False)
-    lr_scheduler_func = CosineDecayScheduler(base_lr=1, max_epoch=config.n_epoch)
+    optimizer = optim.Adam(model.parameters(), lr=lr, amsgrad=False)
+    lr_scheduler_func = CosineDecayScheduler(base_lr=1, max_epoch=n_epoch)
     lr_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_scheduler_func)
     model.train()
 
-    n_epoch = config.n_epoch
-    temperature = config.temperature
     best_loss = -1
-
+    global_step = 0
     for epoch in range(n_epoch):
         print(f'epoch: {epoch}')
 
@@ -81,13 +87,18 @@ def main():
             loss.backward()
             optimizer.step()
 
-            loss_epoch += loss.item()
-
             if step % 100 == 0:
-                print(f"Step [{step}/{len(dataloader)}]\t Loss: {loss.item()}\t lr: {lr_scheduler.get_lr()}")
+                print(f"Step [{step}/{len(dataloader)}],  Loss: {loss.item()}")
+
+            writer.add_scalar("Loss/train_epoch", loss.item(), global_step)
+
+            loss_epoch += loss.item()
+            global_step += 1
 
         print(
-            f"Epoch [{epoch}/{n_epoch}]\t Loss: {loss_epoch / len(dataloader)}")
+            f"Epoch [{epoch}/{n_epoch}],  Loss: {loss_epoch / len(dataloader)},  lr: {lr_scheduler.get_lr()}")
+        writer.add_scalar("Loss/train", loss_epoch / len(dataloader), epoch)
+        writer.add_scalar("learning_rate", lr, epoch)
 
         if best_loss < loss_epoch:
             best_loss = loss_epoch
@@ -97,6 +108,7 @@ def main():
         lr_scheduler.step(epoch)
 
     print(f'complete training: {result_path}')
+    writer.close()
 
 
 if __name__ == '__main__':
