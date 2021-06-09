@@ -42,6 +42,20 @@ def train(args):
     """set pathes"""
     ts = datetime.now().strftime(TIME_TEMPLATE)
 
+    if args.ckpt is None:
+        model_ckpt_path = Path('../models/contrastive_learning') / ts
+        model_ckpt_path.mkdir(parents=True)
+    else:
+        try:
+            model_ckpt_path = Path(args.ckpt)
+        except TypeError:
+            print(f'file "{args.ckpt}" is not exist')
+            return
+
+        if not model_ckpt_path.exists():
+            print(f'file "{model_ckpt_path}" is not exist')
+            return
+
     result_path = Path('../results') / ts
     if not result_path.exists():
         result_path.mkdir(parents=True)
@@ -49,10 +63,6 @@ def train(args):
     log_path = Path('../log/tensorboard') / ts
     if not log_path.exists():
         log_path.mkdir(parents=True)
-
-    model_ckp_path = Path(args.ckpt) / ts
-    if not model_ckp_path.exists():
-        model_ckp_path.mkdir(parents=True)
 
     """set training parameter"""
     device = torch.device(config.device)
@@ -78,21 +88,27 @@ def train(args):
     lr_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_scheduler_func)
 
     """if exist pretrained model checkpoint, use it"""
-    ckpt = Path(model_ckp_path / r'model-epoch-*.ckpt')
-    if ckpt.exists():
-        checkpoint = torch.load(ckpt)
+    if len(list(model_ckpt_path.glob(r'model-epoch-*.ckpt'))) > 0:
+        ckpt_file = list(model_ckpt_path.glob(r'model-epoch-*.ckpt'))[0]
+        checkpoint = torch.load(ckpt_file)
+        print(f'use checkpoint at {ckpt_file}')
+        print(f'epoch: {checkpoint["epoch"]}')
+        print(f'loss: {checkpoint["loss"]}')
+
         model.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         lr_scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-        epoch = checkpoint['epoch']
+        s_epoch = checkpoint['epoch'] + 1
         loss = checkpoint['loss']
+    else:
+        s_epoch = 0
 
     model.train()
 
     """training"""
     best_loss = -1
     global_step = 0
-    for epoch in range(n_epoch):
+    for epoch in range(s_epoch, n_epoch):
         print(f'epoch: {epoch}')
 
         loss_epoch = 0
@@ -118,7 +134,7 @@ def train(args):
             global_step += 1
 
         print(
-            f"Epoch [{epoch}/{n_epoch}],  Loss: {loss_epoch / len(dataloader)},  lr: {lr_scheduler.get_lr()}")
+            f"Epoch [{epoch}/{n_epoch}],  Loss: {loss_epoch / len(dataloader)},  lr: {lr_scheduler.get_last_lr()}")
         writer.add_scalar("Loss/train", loss_epoch / len(dataloader), epoch)
         writer.add_scalar("learning_rate", lr, epoch)
 
@@ -128,11 +144,11 @@ def train(args):
             'optimizer_state_dict': optimizer.state_dict(),
             'scheduler_state_dict': lr_scheduler.state_dict(),
             'loss': loss_epoch,
-        }, model_ckp_path/f'model-epoch-{epoch}.ckpt')
-        old_ckpt = Path(model_ckp_path/f'model-epoch-{epoch-1}.ckpt')
+        }, model_ckpt_path/f'model-epoch-{epoch}.ckpt')
+        old_ckpt = Path(model_ckpt_path/f'model-epoch-{epoch-1}.ckpt')
 
         # if prior check point exist, delete it
-        if old_ckpt.exists:
+        if old_ckpt.exists():
             old_ckpt.unlink()
 
         if best_loss < loss_epoch:
@@ -148,11 +164,7 @@ def train(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '-c', '--ckpt',
-        default='../models/contrastive_learning',
-        help='path to model check point'
-    )
+    parser.add_argument('-c', '--ckpt', help='path to model check point')
 
     args = parser.parse_args()
 
