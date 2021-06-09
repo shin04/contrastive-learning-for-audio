@@ -5,6 +5,7 @@ from enum import Enum
 import numpy as np
 import pandas as pd
 import soundfile as sf
+import librosa
 from torch.utils.data import Dataset
 
 from utils.audio_checker import get_audio_names
@@ -56,10 +57,18 @@ class CLDataset(Dataset):
         wave_data, sr = sf.read(data_path)
 
         crop_size = self.data_crop_size * sr
+        crop_data, _ = random_crop(wave_data, crop_size)
 
-        q_data, _ = random_crop(wave_data, crop_size)
+        q_data = crop_data
         q_data = q_data.reshape((1, -1))
-        pos_k_data = q_data
+
+        win_size = int(0.2*sr)
+        hop_len = int(0.1*sr)
+        mel = librosa.feature.melspectrogram(
+            y=crop_data, sr=sr, n_mels=80, n_fft=win_size, win_length=win_size, hop_length=hop_len)
+        # log_mel = np.log(mel)
+
+        pos_k_data = mel[np.newaxis, :, :]
 
         return np.float32(q_data), np.float32(pos_k_data), sr
 

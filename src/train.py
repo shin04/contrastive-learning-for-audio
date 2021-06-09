@@ -1,5 +1,6 @@
 from datetime import datetime
 from pathlib import Path
+import argparse
 
 import torch
 from torch.utils.data import DataLoader
@@ -37,7 +38,8 @@ def nt_xent_loss(q, pos_k, temperature):
     return loss
 
 
-def main():
+def train(args):
+    """set pathes"""
     ts = datetime.now().strftime(TIME_TEMPLATE)
 
     result_path = Path('../results') / ts
@@ -48,26 +50,46 @@ def main():
     if not log_path.exists():
         log_path.mkdir(parents=True)
 
+    model_ckp_path = Path(args.ckpt) / ts
+    if not model_ckp_path.exists():
+        model_ckp_path.mkdir(parents=True)
+
+    """set training parameter"""
     device = torch.device(config.device)
     n_epoch = config.n_epoch
     temperature = config.temperature
     lr = config.lr
     batch_size = config.batch_size
 
+    """tensorboard"""
     writer = SummaryWriter(log_dir=log_path)
 
+    """prepare dataset"""
     dataset = CLDataset(
         audio_path=config.audio_path, metadata_path=config.metadata_path,
         q_type='raw', k_type='raw', data_crop_size=3
     )
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True,  pin_memory=True)
 
+    """prepare models"""
     model = CLModel().to(device)
     optimizer = optim.Adam(model.parameters(), lr=lr, amsgrad=False)
     lr_scheduler_func = CosineDecayScheduler(base_lr=1, max_epoch=n_epoch)
     lr_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_scheduler_func)
+
+    """if exist pretrained model checkpoint, use it"""
+    ckpt = Path(model_ckp_path / r'model-epoch-*.ckpt')
+    if ckpt.exists():
+        checkpoint = torch.load(ckpt)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        lr_scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+        epoch = checkpoint['epoch']
+        loss = checkpoint['loss']
+
     model.train()
 
+    """training"""
     best_loss = -1
     global_step = 0
     for epoch in range(n_epoch):
@@ -100,6 +122,19 @@ def main():
         writer.add_scalar("Loss/train", loss_epoch / len(dataloader), epoch)
         writer.add_scalar("learning_rate", lr, epoch)
 
+        torch.save({
+            'epoch': epoch,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'scheduler_state_dict': lr_scheduler.state_dict(),
+            'loss': loss_epoch,
+        }, model_ckp_path/f'model-epoch-{epoch}.ckpt')
+        old_ckpt = Path(model_ckp_path/f'model-epoch-{epoch-1}.ckpt')
+
+        # if prior check point exist, delete it
+        if old_ckpt.exists:
+            old_ckpt.unlink()
+
         if best_loss < loss_epoch:
             best_loss = loss_epoch
             with open(result_path / 'best.pt', 'wb') as f:
@@ -112,4 +147,13 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-c', '--ckpt',
+        default='../models/contrastive_learning',
+        help='path to model check point'
+    )
+
+    args = parser.parse_args()
+
+    train(args)

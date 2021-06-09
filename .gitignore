@@ -7,6 +7,7 @@ __pycache__
 *csv
 *log
 
-dataset/
-results/
-log/
+/dataset/
+/results/
+/log/
+/models/

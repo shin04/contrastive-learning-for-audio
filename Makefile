@@ -5,6 +5,7 @@ CONTAINER_NAME=cl
 # VERSION=0.1.0
 MOUNT_PATH=/home/kajiwara21/work/contrastive-leaning
 DATASET_PATH=/home/kajiwara21/nas02/internal/datasets/AudioSet
+MODEL_PATH=/home/kajiwara21/nas02/home/models/contrastive_learning
 
 
 build:
@@ -15,6 +16,7 @@ run:
 		--shm-size=4g \
 		--mount type=bind,source=$(MOUNT_PATH),target=/ml \
 		--mount type=bind,source=$(DATASET_PATH),target=/ml/dataset \
+		--mount type=bind,source=$(MODEL_PATH),target=/ml/models \
 		--name $(CONTAINER_NAME) \
 		--gpus all \
 		-p 6006:6006 \
@@ -23,7 +25,9 @@ run:
 run-background:
 	docker run -itd \
 		--shm-size=4g \
-		--mount type=bind, source=".", target=/ml \
+		--mount type=bind, source=$(MOUNT_PATH), target=/ml \
+		--mount type=bind, source=$(DATASET_PATH), target=/ml/dataset \
+		--mount type=bind, source=$(MODEL_PATH), target=/ml/models \
 		--name $(CONTAINER_NAME) \
 		--gpus all \
 		$(IMAGE_NAME) /bin/bash

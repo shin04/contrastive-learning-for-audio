@@ -49,7 +49,7 @@ class CLModel(nn.Module):
 
     def forward(self, q, k):
         h_i = self.raw_model(q)
-        h_j = self.raw_model(k)
+        h_j = self.spec_model(k)
 
         z_i = self.projection(h_i)
         z_j = self.projection(h_j)
