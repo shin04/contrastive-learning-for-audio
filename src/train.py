@@ -79,8 +79,7 @@ def main():
             loss = nt_xent_loss(z_i, z_j, temperature)
 
             loss.backward()
-            # optimizer.step()
-            lr_scheduler.step(epoch)
+            optimizer.step()
 
             loss_epoch += loss.item()
 
@@ -94,6 +93,8 @@ def main():
             best_loss = loss_epoch
             with open(result_path / 'best.pt', 'wb') as f:
                 torch.save(model.state_dict(), f)
+
+        lr_scheduler.step(epoch)
 
     print(f'complete training: {result_path}')
 
