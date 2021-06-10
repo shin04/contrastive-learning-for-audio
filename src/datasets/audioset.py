@@ -8,18 +8,9 @@ import soundfile as sf
 import librosa
 from torch.utils.data import Dataset
 
-from utils.audio_checker import get_audio_names
-
-
-def random_crop(data, crop_size):
-    data_length = len(data)
-
-    start = np.random.randint(0, data_length-crop_size)
-    end = start+crop_size
-
-    crop_data = data[start:end]
-
-    return crop_data, start
+# from utils.audio_checker import get_audio_names
+# from datasets.utils import random_crop, mel_spec
+from utils import random_crop, mel_spec
 
 
 class DataType(Enum):
@@ -38,11 +29,14 @@ class CLDataset(Dataset):
     ):
         self.audio_path = Path(audio_path)
 
-        if metadata_path is None:
-            self.audio_names = get_audio_names(audio_path, data_crop_size)
-        else:
-            df = pd.read_csv(Path(metadata_path), header=None)
-            self.audio_names = df[0].values.tolist()
+        # if metadata_path is None:
+        #     self.audio_names = get_audio_names(audio_path, data_crop_size)
+        # else:
+        #     df = pd.read_csv(Path(metadata_path), header=None)
+        #     self.audio_names = df[0].values.tolist()
+
+        df = pd.read_csv(Path(metadata_path), header=None)
+        self.audio_names = df[0].values.tolist()
 
         self.q_type = q_type
         self.k_type = k_type
@@ -64,8 +58,16 @@ class CLDataset(Dataset):
 
         win_size = int(0.2*sr)
         hop_len = int(0.1*sr)
-        mel = librosa.feature.melspectrogram(
-            y=crop_data, sr=sr, n_mels=80, n_fft=win_size, win_length=win_size, hop_length=hop_len)
+        mel = mel_spec(crop_data, sr, win_size, hop_len, 80)
+        # spec = librosa.stft(
+        #     y=crop_data, n_fft=win_size, win_length=win_size, hop_length=hop_len)
+        # spec = np.abs(spec) ** 2.0
+        # mel_filter_bank = librosa.filters.mel(
+        #     sr=sr, n_fft=win_size, n_mels=80,)
+        # mel = np.dot(mel_filter_bank, spec)
+
+        # mel = librosa.feature.melspectrogram(
+        #     y=crop_data, sr=sr, n_mels=80, n_fft=win_size, win_length=win_size, hop_length=hop_len)
         # log_mel = np.log(mel)
 
         pos_k_data = mel[np.newaxis, :, :]
