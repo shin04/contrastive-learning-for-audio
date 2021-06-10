@@ -16,6 +16,7 @@ TIME_TEMPLATE = '%Y%m%d%H%M%S'
 
 
 def nt_xent_loss(q, pos_k, temperature):
+    # reference
     # https://www.youtube.com/watch?v=_1eKr4rbgRI
     # https://colab.research.google.com/drive/1UK8BD3xvTpuSj75blz8hThfXksh19YbA?usp=sharing#scrollTo=GBNm6bbDT9J3
 

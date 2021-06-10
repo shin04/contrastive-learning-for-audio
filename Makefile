@@ -1,12 +1,7 @@
 SHELL=/bin/zsh
 
-IMAGE_NAME=cl
-CONTAINER_NAME=cl
-# VERSION=0.1.0
-MOUNT_PATH=/home/kajiwara21/work/contrastive-leaning
-DATASET_PATH=/home/kajiwara21/nas02/internal/datasets/AudioSet
-MODEL_PATH=/home/kajiwara21/nas02/home/models/contrastive_learning
-
+include .env
+export $(shell sed 's/=.*//' .env)
 
 build:
 	docker build -t $(IMAGE_NAME) .
