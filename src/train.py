@@ -76,6 +76,15 @@ def train(args):
     n_mels = config.n_mels
     freq_shift_size = config.freq_shift_size
 
+    print("TRAINING PARAMETERS")
+    print("device:", device)
+    print("n_epoch:", n_epoch)
+    print("temperature:", temperature)
+    print("lr:", lr)
+    print("batch_size:", batch_size)
+    print("n_mels:", n_mels)
+    print("freq_shift_size:", freq_shift_size)
+
     """tensorboard"""
     writer = SummaryWriter(log_dir=log_path)
 
