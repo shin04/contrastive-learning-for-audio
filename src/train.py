@@ -44,7 +44,7 @@ def train(args):
     ts = datetime.now().strftime(TIME_TEMPLATE)
 
     if args.ckpt is None:
-        model_ckpt_path = Path('../models/contrastive_learning') / ts
+        model_ckpt_path = Path('../models') / ts
         model_ckpt_path.mkdir(parents=True)
     else:
         try:
@@ -80,13 +80,15 @@ def train(args):
         audio_path=config.audio_path, metadata_path=config.metadata_path,
         q_type='raw', k_type='raw', data_crop_size=3
     )
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True,  pin_memory=True)
+    dataloader = DataLoader(dataset, batch_size=batch_size,
+                            shuffle=True,  pin_memory=True)
 
     """prepare models"""
     model = CLModel().to(device)
     optimizer = optim.Adam(model.parameters(), lr=lr, amsgrad=False)
     lr_scheduler_func = CosineDecayScheduler(base_lr=1, max_epoch=n_epoch)
-    lr_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_scheduler_func)
+    lr_scheduler = torch.optim.lr_scheduler.LambdaLR(
+        optimizer, lr_lambda=lr_scheduler_func)
 
     """if exist pretrained model checkpoint, use it"""
     if len(list(model_ckpt_path.glob(r'model-epoch-*.ckpt'))) > 0:
