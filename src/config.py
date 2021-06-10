@@ -9,3 +9,5 @@ batch_size = 32
 lr = 0.001  # to 0.00001
 audio_crop_size = 3  # sec
 temperature = 0.1
+n_mels = 80
+freq_shift_size = 20

@@ -1,6 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 import argparse
+from datasets.utils import frequemcy_shift_by_spec
 
 import torch
 from torch.utils.data import DataLoader
@@ -42,6 +43,7 @@ def nt_xent_loss(q, pos_k, temperature):
 def train(args):
     """set pathes"""
     ts = datetime.now().strftime(TIME_TEMPLATE)
+    print(f"TIMESTAMP: {ts}")
 
     if args.ckpt is None:
         model_ckpt_path = Path('../models') / ts
@@ -71,6 +73,8 @@ def train(args):
     temperature = config.temperature
     lr = config.lr
     batch_size = config.batch_size
+    n_mels = config.n_mels
+    freq_shift_size = config.freq_shift_size
 
     """tensorboard"""
     writer = SummaryWriter(log_dir=log_path)
@@ -78,7 +82,8 @@ def train(args):
     """prepare dataset"""
     dataset = CLDataset(
         audio_path=config.audio_path, metadata_path=config.metadata_path,
-        q_type='raw', k_type='raw', data_crop_size=3
+        q_type='raw', k_type='raw', data_crop_size=3,
+        n_mels=n_mels, freq_shift_size=freq_shift_size
     )
     dataloader = DataLoader(dataset, batch_size=batch_size,
                             shuffle=True,  pin_memory=True)
