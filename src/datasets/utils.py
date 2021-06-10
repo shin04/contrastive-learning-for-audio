@@ -42,7 +42,7 @@ def frequemcy_shift_by_spec(input: np.ndarray, sr: int, win_size: int, max_shift
     return shifted_data
 
 
-def mel_spec(input: np.ndarray, sr: int, win_size: int, hop_len: int, n_mels: int, max_sift=None) -> np.ndarray:
+def mel_spec(input: np.ndarray, sr: int, win_size: int, hop_len: int, n_mels: int, max_sift: int = None) -> np.ndarray:
     spec = librosa.stft(
         y=input, n_fft=win_size, win_length=win_size, hop_length=hop_len)
     spec = np.abs(spec) ** 2.0
