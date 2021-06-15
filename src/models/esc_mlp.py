@@ -1,7 +1,16 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from torchinfo import summary
+
+from models.cl_model import CLModel
+from models.raw_model import Conv160
+from models.spec_model import CNN6
+
+# from cl_model import CLModel
+# from raw_model import Conv160
+# from spec_model import CNN6
 
 
 class ESC_Model(nn.Module):
@@ -36,5 +45,10 @@ class ESC_Model(nn.Module):
 
 
 if __name__ == '__main__':
-    model = ESC_Model().cuda()
-    summary(model, input_size=(32, 1, 512*2))
+    # model = ESC_Model().cuda()
+    # summary(model, input_size=(32, 1, 512*2))
+
+    cl_model = CLModel()
+    cl_model.load_state_dict(torch.load(
+        '../../models/20210610112655/model-epoch-326.ckpt'))
+    print(cl_model)

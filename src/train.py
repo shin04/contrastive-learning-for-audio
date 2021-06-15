@@ -1,7 +1,6 @@
 from datetime import datetime
 from pathlib import Path
 import argparse
-from datasets.utils import frequemcy_shift_by_spec
 
 import torch
 from torch.utils.data import DataLoader
@@ -46,8 +45,9 @@ def train(args):
     print(f"TIMESTAMP: {ts}")
 
     if args.ckpt is None:
-        model_ckpt_path = Path('../models') / ts
-        model_ckpt_path.mkdir(parents=True)
+        model_ckpt_path = Path('../models/contrastive_learning') / ts
+        if not result_path.exists():
+            model_ckpt_path.mkdir(parents=True)
     else:
         try:
             model_ckpt_path = Path(args.ckpt)
@@ -63,9 +63,20 @@ def train(args):
     if not result_path.exists():
         result_path.mkdir(parents=True)
 
-    log_path = Path('../log/tensorboard') / ts
-    if not log_path.exists():
-        log_path.mkdir(parents=True)
+    if args.tboard is None:
+        log_path = Path('../log/tensorboard') / ts
+        if not log_path.exists():
+            log_path.mkdir(parents=True)
+    else:
+        try:
+            log_path = Path(args.tboard)
+        except TypeError:
+            print(f'file "{args.tboard}" is not exist')
+            return
+
+        if not log_path.exists():
+            print(f'file "{log_path}" is not exist')
+            return
 
     """set training parameter"""
     device = torch.device(config.device)
@@ -182,6 +193,7 @@ def train(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--ckpt', help='path to model check point')
+    parser.add_argument('-t', '--tboard', help='path to tensorboard')
 
     args = parser.parse_args()
 

@@ -5,7 +5,6 @@ from enum import Enum
 import numpy as np
 import pandas as pd
 import soundfile as sf
-import librosa
 from torch.utils.data import Dataset
 
 from utils.audio_checker import get_audio_names

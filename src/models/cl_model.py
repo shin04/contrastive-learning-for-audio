@@ -6,6 +6,9 @@ from torchinfo import summary
 from models.raw_model import Conv160
 from models.spec_model import CNN6
 
+# from raw_model import Conv160
+# from spec_model import CNN6
+
 # https://colab.research.google.com/drive/1UK8BD3xvTpuSj75blz8hThfXksh19YbA?usp=sharing#scrollTo=7JOQBJplT_mw
 
 
