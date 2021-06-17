@@ -10,7 +10,8 @@ run:
 	docker run -it \
 		--shm-size=4g \
 		--mount type=bind,source=$(MOUNT_PATH),target=/ml \
-		--mount type=bind,source=$(DATASET_PATH),target=/ml/dataset \
+		--mount type=bind,source=$(DATASET_PATH),target=/ml/dataset/audioset \
+		--mount type=bind,source=$(ESC_PATH),target=/ml/dataset/esc \
 		--mount type=bind,source=$(MODEL_PATH),target=/ml/models \
 		--name $(CONTAINER_NAME) \
 		--gpus all \

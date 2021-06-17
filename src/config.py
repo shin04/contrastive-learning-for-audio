@@ -1,8 +1,9 @@
 device = 'cuda'
 
-audio_path = '/ml/dataset/audio/balanced_train_segments'
+audio_path = '/ml/dataset/audioset/audio/balanced_train_segments'
 # metadata_path = '/ml/dataset/meta_data/balanced_train_segments.csv'
-metadata_path = '/ml/meta.csv'
+# metadata_path = '/ml/meta.csv'
+metadata_path = None
 
 n_epoch = 400000
 batch_size = 32

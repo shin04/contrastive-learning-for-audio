@@ -35,8 +35,8 @@ class CLDataset(Dataset):
             df = pd.read_csv(Path(metadata_path), header=None)
             self.audio_names = df[0].values.tolist()
 
-        df = pd.read_csv(Path(metadata_path), header=None)
-        self.audio_names = df[0].values.tolist()
+        # df = pd.read_csv(Path(metadata_path), header=None)
+        # self.audio_names = df[0].values.tolist()
 
         self.q_type = q_type
         self.k_type = k_type
@@ -70,7 +70,7 @@ class CLDataset(Dataset):
 
 if __name__ == '__main__':
     dataset = CLDataset(
-        audio_path='/ml/dataset/audio/balanced_train_segments',
+        audio_path='/ml/dataset/audioset/audio/balanced_train_segments',
         metadata_path='../../meta.csv',
         freq_shift_size=20
     )

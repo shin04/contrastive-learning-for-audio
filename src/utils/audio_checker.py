@@ -22,6 +22,7 @@ def get_audio_names(audio_path, crop_sec):
 
 
 if __name__ == '__main__':
-    audio_names = get_audio_names('/ml/dataset/audio/balanced_train_segments', 3)
+    audio_names = get_audio_names(
+        '/ml/dataset/audioset/audio/balanced_train_segments', 3)
     meta_s = pd.Series(audio_names)
     meta_s.to_csv('/ml/meta.csv', header=False, index=False)

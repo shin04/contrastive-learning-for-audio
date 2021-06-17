@@ -46,7 +46,7 @@ def train(args):
 
     if args.ckpt is None:
         model_ckpt_path = Path('../models/contrastive_learning') / ts
-        if not result_path.exists():
+        if not model_ckpt_path.exists():
             model_ckpt_path.mkdir(parents=True)
     else:
         try:
@@ -77,6 +77,11 @@ def train(args):
         if not log_path.exists():
             print(f'file "{log_path}" is not exist')
             return
+
+    print("PATH")
+    print("checkpoint:", model_ckpt_path)
+    print("best model:", result_path)
+    print("tensorboard:", log_path)
 
     """set training parameter"""
     device = torch.device(config.device)
