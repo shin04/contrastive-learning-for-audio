@@ -14,14 +14,12 @@ from models.spec_model import CNN6
 
 
 class ESC_Model(nn.Module):
-    def __init__(self, base_model, batch_size, in_channels, hidden_dim, out_channels, is_training=True):
+    def __init__(self, base_model, in_channels, hidden_dim, out_channels, is_training=True):
         super(ESC_Model, self).__init__()
 
         self.base_model = base_model
         for param in self.base_model.parameters():
             param.requires_grad = False
-
-        self.batch_size = batch_size
 
         self.in_channels = in_channels
         self.hidden_dim = hidden_dim
@@ -35,7 +33,7 @@ class ESC_Model(nn.Module):
 
     def forward(self, input):
         x = self.base_model(input)
-        x = x.view(self.batch_size, -1)
+        x = x.view(x.size()[0], -1)
 
         x = self.hidden_layer(x)
         x = self.norm(x)
@@ -47,9 +45,6 @@ class ESC_Model(nn.Module):
 
 
 if __name__ == '__main__':
-    # model = ESC_Model().cuda()
-    # summary(model, input_size=(32, 1, 512*2))
-
     cl_model = CLModel()
     cl_model.load_state_dict(torch.load(
         '../../results/20210610112655/best.pt'))
@@ -67,11 +62,11 @@ if __name__ == '__main__':
     raw_model = Conv160().cuda()
     raw_model.load_state_dict(raw_model_dict)
 
-    model = ESC_Model(raw_model, 32, 512*1000, 512, 50).cuda()
+    model = ESC_Model(raw_model, 512*1000, 512, 50).cuda()
     summary(model, input_size=(32, 1, 160*1000))
 
     spec_model = CNN6()
     spec_model.load_state_dict(spec_model_dict)
 
-    model = ESC_Model(spec_model, 32, 2048, 512, 50).cuda()
+    model = ESC_Model(spec_model, 2048, 512, 50).cuda()
     summary(model, input_size=(32, 1, 64, 1000))

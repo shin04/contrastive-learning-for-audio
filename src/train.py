@@ -155,6 +155,8 @@ def train(args):
 
             loss = nt_xent_loss(z_i, z_j, temperature)
 
+            optimizer.zero_grad()
+
             loss.backward()
             optimizer.step()
 

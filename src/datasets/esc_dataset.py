@@ -19,6 +19,7 @@ class DataType(Enum):
 class ESCDataset(Dataset):
     def __init__(
         self, audio_path: str, metadata_path: str,
+        folds: int = None,
         data_type: DataType = 'raw',
         data_crop_size=3,
         n_mels: int = 80,
@@ -27,10 +28,20 @@ class ESCDataset(Dataset):
         self.audio_path = Path(audio_path)
 
         df = pd.read_csv(Path(metadata_path))
-        self.audio_names = [
-            self.audio_path / name for name in df['filename'].values.tolist()]
-
-        self.labels = df['target'].values
+        self.audio_names = []
+        self.labels = []
+        for i in range(len(df)):
+            df_fold = df.loc[i]['fold']
+            p = self.audio_path / df.loc[i]['filename']
+            label = df.loc[i]['target']
+            if folds is None:
+                self.audio_names.append(p)
+                self.labels.append(label)
+            elif df_fold in folds:
+                self.audio_names.append(p)
+                self.labels.append(label)
+            else:
+                continue
 
         self.data_type = data_type
         self.data_crop_size = data_crop_size
@@ -64,6 +75,7 @@ if __name__ == '__main__':
     dataset = ESCDataset(
         audio_path='/ml/dataset/esc/audio',
         metadata_path='/ml/dataset/esc/meta/esc50.csv',
+        folds=[1],
         freq_shift_size=20
     )
 
