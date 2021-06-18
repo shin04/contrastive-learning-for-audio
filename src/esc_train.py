@@ -1,8 +1,13 @@
+from datetime import datetime
+from pathlib import Path
+
 import torch
 from torch.utils.data import DataLoader
 import torch.optim as optim
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
+
+from sklearn.metrics import average_precision_score
 
 import config
 from datasets.esc_dataset import ESCDataset
@@ -10,6 +15,12 @@ from models.esc_mlp import ESC_Model
 from models.cl_model import CLModel
 from models.raw_model import Conv160
 # from models.spec_model import CNN6
+
+TIME_TEMPLATE = '%Y%m%d%H%M%S'
+
+
+def calc_map(class_num: int):
+    pass
 
 
 def train(trainloader, optimizer, device, global_step,  model, criterion, writer, fold):
@@ -79,12 +90,17 @@ def valid(validloader, device, model, criterion):
 
 
 def run():
+    ts = datetime.now().strftime(TIME_TEMPLATE)
+    log_path = Path('../log/esc') / ts
+    if not log_path.exists():
+        log_path.mkdir(parents=True)
+
     device = torch.device(config.device)
     n_epoch = 100
     lr = 0.001
     batch_size = 32
 
-    writer = SummaryWriter(log_dir='../log/esc')
+    writer = SummaryWriter(log_dir=log_path)
 
     dataloaders = []
     for i in range(5):

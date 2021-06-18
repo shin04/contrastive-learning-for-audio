@@ -9,7 +9,7 @@ def get_audio_names(audio_path, crop_sec):
     audio_path = Path(audio_path)
 
     audio_names = []
-    for audio_name in tqdm(audio_path.glob('*.wav')):
+    for audio_name in tqdm(audio_path.glob('**/*.wav')):
         wave_data, sr = sf.read(audio_name)
 
         crop_size = crop_sec * sr
@@ -23,6 +23,6 @@ def get_audio_names(audio_path, crop_sec):
 
 if __name__ == '__main__':
     audio_names = get_audio_names(
-        '/ml/dataset/audioset/audio/balanced_train_segments', 3)
+        '/ml/dataset/audioset/audio', 3)
     meta_s = pd.Series(audio_names)
     meta_s.to_csv('/ml/meta.csv', header=False, index=False)
