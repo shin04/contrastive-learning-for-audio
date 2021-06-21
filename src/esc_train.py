@@ -7,8 +7,6 @@ import torch.optim as optim
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 
-from sklearn.metrics import average_precision_score
-
 import config
 from datasets.esc_dataset import ESCDataset
 from models.esc_mlp import ESC_Model
@@ -19,16 +17,13 @@ from models.raw_model import Conv160
 TIME_TEMPLATE = '%Y%m%d%H%M%S'
 
 
-def calc_map(class_num: int):
-    pass
-
-
 def train(trainloader, optimizer, device, global_step,  model, criterion, writer, fold):
     model.train()
 
     n_batch = len(trainloader)
     train_loss = 0
     train_acc = 0
+    total = 0
     for batch_num, (t_data, labels) in enumerate(trainloader):
         # if batch_num == n_batch:
         #     continue
@@ -46,15 +41,16 @@ def train(trainloader, optimizer, device, global_step,  model, criterion, writer
         train_loss += loss.item()
 
         _, predict = torch.max(outputs.data, 1)
+        total += labels.size(0)
         correct = (predict == labels).sum()
         train_acc += correct.item()
 
         writer.add_scalar(f"{fold}/loss", loss.item(), global_step)
-        writer.add_scalar(f"{fold}/acc", correct.item(), global_step)
+        writer.add_scalar(f"{fold}/acc", correct.item()/labels.size(0), global_step)
         print(
             f'batch: {batch_num}/{n_batch}, '
             f'loss: {loss.item()}, train loss: {train_loss/(batch_num+1)}, '
-            f'acc: {correct.item()/len(labels)}, train acc: {train_acc/(len(labels)*(batch_num+1))} ')
+            f'acc: {correct.item()/labels.size(0)}, train acc: {train_acc/total} ')
         global_step += 1
 
     train_loss /= n_batch
@@ -68,6 +64,7 @@ def valid(validloader, device, model, criterion):
 
     valid_loss = 0
     valid_acc = 0
+    total = 0
 
     with torch.no_grad():
         for i, (t_data, labels) in enumerate(validloader):
@@ -80,11 +77,12 @@ def valid(validloader, device, model, criterion):
             valid_loss += loss.item()
 
             _, predict = torch.max(outputs.data, 1)
+            total += labels.size(0)
             correct = (predict == labels).sum()
             valid_acc += correct.item()
 
         valid_loss /= len(validloader)
-        valid_acc /= len(validloader.dataset)
+        valid_acc /= total
 
     print(f'val loss: {valid_loss}, val acc: {valid_acc}')
 
@@ -154,8 +152,7 @@ def run():
     criterion = nn.CrossEntropyLoss()
 
     for k_fold, (trainloader, validloader) in enumerate(dataloaders):
-        print('='*10)
-        print(f'fold: {k_fold}')
+        print(f'===== fold: {k_fold}')
 
         train_global_step = 0
         for epoch in range(n_epoch):
