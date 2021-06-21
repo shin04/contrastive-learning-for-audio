@@ -25,8 +25,6 @@ def train(trainloader, optimizer, device, global_step,  model, criterion, writer
     train_acc = 0
     total = 0
     for batch_num, (t_data, labels) in enumerate(trainloader):
-        # if batch_num == n_batch:
-        #     continue
         optimizer.zero_grad()
         t_data = t_data.to(device)
         labels = labels.to(device)
@@ -87,6 +85,29 @@ def valid(validloader, device, model, criterion):
     print(f'val loss: {valid_loss}, val acc: {valid_acc}')
 
 
+def test(testloader, device, model):
+    model.eval()
+
+    valid_acc = 0
+    total = 0
+
+    with torch.no_grad():
+        for i, (t_data, labels) in enumerate(testloader):
+            t_data = t_data.to(device)
+            labels = labels.to(device)
+
+            outputs = model(t_data)
+
+            _, predict = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct = (predict == labels).sum()
+            valid_acc += correct.item()
+
+        valid_acc /= total
+
+    print(f'test acc: {valid_acc}')
+
+
 def run():
     ts = datetime.now().strftime(TIME_TEMPLATE)
     log_path = Path('../log/esc') / ts
@@ -100,13 +121,26 @@ def run():
 
     writer = SummaryWriter(log_dir=log_path)
 
-    dataloaders = []
-    for i in range(5):
-        folds = [i+1 for i in range(5)]
+    """
+    dividing data, reference below
+    https://github.com/karolpiczak/paper-2015-esc-convnet/issues/2
+    """
+    fold_dict_list = [
+        {"train": [1, 2, 4], "valid": [4], "test": [0]},
+        {"train": [2, 3, 4], "valid": [0], "test": [1]},
+        {"train": [0, 3, 4], "valid": [1], "test": [2]},
+        {"train": [0, 1, 4], "valid": [2], "test": [3]},
+        {"train": [0, 1, 2], "valid": [3], "test": [4]},
+    ]
+
+    for k_fold, fold_dict in enumerate(fold_dict_list):
+        print(f'===== fold: {k_fold}')
+
+        """prepare dataset"""
         trainset = ESCDataset(
             audio_path='/ml/dataset/esc/audio',
             metadata_path='/ml/dataset/esc/meta/esc50.csv',
-            folds=folds.remove(i+1),
+            folds=fold_dict['train'],
             data_type='raw',
             data_crop_size=3
         )
@@ -114,51 +148,62 @@ def run():
         validset = ESCDataset(
             audio_path='/ml/dataset/esc/audio',
             metadata_path='/ml/dataset/esc/meta/esc50.csv',
-            folds=[i+1],
+            folds=fold_dict['valid'],
             data_type='raw',
             data_crop_size=3
         )
-        trainloader = DataLoader(trainset, batch_size=batch_size,
-                                 shuffle=True, pin_memory=True)
-        validloader = DataLoader(validset, batch_size=batch_size,
-                                 shuffle=True, pin_memory=True)
-        dataloaders.append((trainloader, validloader))
 
-    cl_model = CLModel()
-    cl_model.load_state_dict(torch.load(
-        '../results/20210610112655/best.pt'))
-    state_dict_keys = list(cl_model.state_dict().keys())
+        testset = ESCDataset(
+            audio_path='/ml/dataset/esc/audio',
+            metadata_path='/ml/dataset/esc/meta/esc50.csv',
+            folds=fold_dict['test'],
+            data_type='raw',
+            data_crop_size=3
+        )
 
-    raw_model_dict = {}
-    spec_model_dict = {}
-    for k in state_dict_keys:
-        _k = k.split('.')
-        if 'raw_model' == _k[0]:
-            raw_model_dict[".".join(_k[1:])] = cl_model.state_dict()[k]
-        elif 'spec_model' == _k[0]:
-            spec_model_dict[".".join(_k[1:])] = cl_model.state_dict()[k]
+        trainloader = DataLoader(
+            trainset, batch_size=batch_size, shuffle=True, pin_memory=True)
+        validloader = DataLoader(
+            validset, batch_size=batch_size, shuffle=True, pin_memory=True)
+        testloader = DataLoader(
+            testset, batch_size=batch_size, shuffle=False, pin_memory=True)
 
-    raw_model = Conv160().cuda()
-    raw_model.load_state_dict(raw_model_dict)
+        """prepare model"""
+        cl_model = CLModel()
+        cl_model.load_state_dict(torch.load(
+            '../results/20210610112655/best.pt'))
+        state_dict_keys = list(cl_model.state_dict().keys())
 
-    model = ESC_Model(raw_model, 422912, 512, 50).cuda()
+        raw_model_dict = {}
+        spec_model_dict = {}
+        for k in state_dict_keys:
+            _k = k.split('.')
+            if 'raw_model' == _k[0]:
+                raw_model_dict[".".join(_k[1:])] = cl_model.state_dict()[k]
+            elif 'spec_model' == _k[0]:
+                spec_model_dict[".".join(_k[1:])] = cl_model.state_dict()[k]
 
-    # spec_model = CNN6()
-    # spec_model.load_state_dict(spec_model_dict)
+        raw_model = Conv160().cuda()
+        raw_model.load_state_dict(raw_model_dict)
 
-    # model = ESC_Model(spec_model, 32, 2048, 512, 50).cuda()
+        model = ESC_Model(raw_model, 422912, 512, 50).cuda()
 
-    optimizer = optim.Adam(model.parameters(), lr=lr)
-    criterion = nn.CrossEntropyLoss()
+        # spec_model = CNN6()
+        # spec_model.load_state_dict(spec_model_dict)
 
-    for k_fold, (trainloader, validloader) in enumerate(dataloaders):
-        print(f'===== fold: {k_fold}')
+        # model = ESC_Model(spec_model, 32, 2048, 512, 50).cuda()
 
+        """prepare optimizer and loss function"""
+        optimizer = optim.Adam(model.parameters(), lr=lr)
+        criterion = nn.CrossEntropyLoss()
+
+        """training and test"""
         train_global_step = 0
         for epoch in range(n_epoch):
             train_global_step, train_loss, train_acc = train(
                 trainloader, optimizer, device, train_global_step, model, criterion, writer, k_fold)
             valid(validloader, device, model, criterion)
+            test(testloader, device, model)
 
             writer.add_scalar(f"{k_fold}/loss/epoch", train_loss, epoch)
             writer.add_scalar(f"{k_fold}/acc/epoch", train_acc, epoch)
