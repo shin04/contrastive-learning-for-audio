@@ -1,0 +1,19 @@
+device: cuda
+
+path:
+  audio: /ml/dataset/esc/audio
+  meta: /ml/dataset/esc/meta
+  model: /ml/models/contrastive_learning
+  tensorboard: /ml/log/esc/tensorboard
+  result: /ml/results
+
+preprocess:
+  audio_crop_size: 3
+  n_mels: 80
+  freq_shift_size: 20
+
+training:
+  n_epoch: 100
+  batch_size: 32
+  lr: 0.001
+  temperature: 0.1

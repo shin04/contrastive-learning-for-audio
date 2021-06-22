@@ -1,6 +1,8 @@
 from datetime import datetime
 from pathlib import Path
 
+import hydra
+
 import torch
 from torch.utils.data import DataLoader
 import torch.optim as optim
@@ -44,7 +46,8 @@ def train(trainloader, optimizer, device, global_step,  model, criterion, writer
         train_acc += correct.item()
 
         writer.add_scalar(f"{fold}/loss", loss.item(), global_step)
-        writer.add_scalar(f"{fold}/acc", correct.item()/labels.size(0), global_step)
+        writer.add_scalar(f"{fold}/acc", correct.item() /
+                          labels.size(0), global_step)
         print(
             f'batch: {batch_num}/{n_batch}, '
             f'loss: {loss.item()}, train loss: {train_loss/(batch_num+1)}, '
@@ -108,18 +111,37 @@ def test(testloader, device, model):
     print(f'test acc: {valid_acc}')
 
 
-def run():
+@ hydra.main(config_path='/ml/config', config_name='pretrain')
+def run(cfg):
+    """set config"""
+    path_cfg = cfg['path']
+    # preprocess_cfg = cfg['preprocess']
+    train_cfg = cfg['training']
+
+    """set path"""
     ts = datetime.now().strftime(TIME_TEMPLATE)
-    log_path = Path('../log/esc') / ts
+    print(f"TIMESTAMP: {ts}")
+
+    log_path = Path(path_cfg['tensorboard']) / ts
     if not log_path.exists():
         log_path.mkdir(parents=True)
 
-    device = torch.device(config.device)
-    n_epoch = 100
-    lr = 0.001
-    batch_size = 32
+    print('PATH')
+    print(f'tensorboard: {log_path}')
+
+    """set parameters"""
+    device = torch.device(cfg['device'])
+    n_epoch = train_cfg['n_epoch']
+    batch_size = train_cfg['batch_size']
+    lr = train_cfg['lr']
 
     writer = SummaryWriter(log_dir=log_path)
+
+    print('PARAMETERS')
+    print(f'device: {device}')
+    print(f'n_epoch: {n_epoch}')
+    print(f'batch_size: {batch_size}')
+    print(f'lr: {lr}')
 
     """
     dividing data, reference below
@@ -132,6 +154,10 @@ def run():
         {"train": [0, 1, 4], "valid": [2], "test": [3]},
         {"train": [0, 1, 2], "valid": [3], "test": [4]},
     ]
+
+    print('FOLD')
+    for i, fold_dict in enumerate(fold_dict_list):
+        print(f'flod {i}: {fold_dict}')
 
     for k_fold, fold_dict in enumerate(fold_dict_list):
         print(f'===== fold: {k_fold}')
