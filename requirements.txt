@@ -6,3 +6,4 @@ torchinfo==0.1.4
 tqdm==4.61.0
 matplotlib==3.4.2
 tensorboard==2.5.0
+hydra-core==1.1.0

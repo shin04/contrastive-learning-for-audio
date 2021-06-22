@@ -2,12 +2,13 @@ from datetime import datetime
 from pathlib import Path
 import argparse
 
+import hydra
+
 import torch
 from torch.utils.data import DataLoader
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 
-import config
 from datasets.audioset import CLDataset
 from models.cl_model import CLModel
 from utils.cosine_decay_rule import CosineDecayScheduler
@@ -39,58 +40,60 @@ def nt_xent_loss(q, pos_k, temperature):
     return loss
 
 
-def train(args):
+@ hydra.main(config_path='/ml/config', config_name='pretrain')
+def train(cfg):
+    """set config"""
+    path_cfg = cfg['path']
+    preprocess_cfg = cfg['preprocess']
+    train_cfg = cfg['training']
+
     """set pathes"""
-    ts = datetime.now().strftime(TIME_TEMPLATE)
+    audio_path = path_cfg['audio']
+    metadata_path = path_cfg['meta']
+
+    if train_cfg['ckpt'] == -1:
+        ts = datetime.now().strftime(TIME_TEMPLATE)
+    else:
+        ts = str(train_cfg['ckpt'])
     print(f"TIMESTAMP: {ts}")
 
-    if args.ckpt is None:
-        model_ckpt_path = Path('../models/contrastive_learning') / ts
-        if not model_ckpt_path.exists():
-            model_ckpt_path.mkdir(parents=True)
-    else:
-        try:
-            model_ckpt_path = Path(args.ckpt)
-        except TypeError:
-            print(f'file "{args.ckpt}" is not exist')
+    # checkpoint path
+    model_ckpt_path = Path(path_cfg['model']) / ts
+    if not model_ckpt_path.exists():
+        if train_cfg['ckpt'] != -1:
+            print('checkpoint file is not found')
             return
+        model_ckpt_path.mkdir(parents=True)
 
-        if not model_ckpt_path.exists():
-            print(f'file "{model_ckpt_path}" is not exist')
+    # tensorboard path
+    log_path = Path(path_cfg['tensorboard']) / ts
+    if not log_path.exists():
+        if train_cfg['ckpt'] != -1:
+            print('tensorboard log file is not found')
             return
+        log_path.mkdir(parents=True)
 
-    result_path = Path('../results') / ts
+    # result path
+    result_path = Path(path_cfg['result']) / ts
     if not result_path.exists():
         result_path.mkdir(parents=True)
 
-    if args.tboard is None:
-        log_path = Path('../log/tensorboard') / ts
-        if not log_path.exists():
-            log_path.mkdir(parents=True)
-    else:
-        try:
-            log_path = Path(args.tboard)
-        except TypeError:
-            print(f'file "{args.tboard}" is not exist')
-            return
-
-        if not log_path.exists():
-            print(f'file "{log_path}" is not exist')
-            return
-
     print("PATH")
+    # print("audio path: ", audio_path)
+    print("metadata:", metadata_path)
     print("checkpoint:", model_ckpt_path)
     print("best model:", result_path)
     print("tensorboard:", log_path)
 
     """set training parameter"""
-    device = torch.device(config.device)
-    n_epoch = config.n_epoch
-    temperature = config.temperature
-    lr = config.lr
-    batch_size = config.batch_size
-    n_mels = config.n_mels
-    freq_shift_size = config.freq_shift_size
+    device = torch.device(cfg['device'])
+    n_epoch = train_cfg['n_epoch']
+    batch_size = train_cfg['batch_size']
+    lr = train_cfg['lr']
+    temperature = train_cfg['temperature']
+
+    n_mels = preprocess_cfg['n_mels']
+    freq_shift_size = preprocess_cfg['freq_shift_size']
 
     print("TRAINING PARAMETERS")
     print("device:", device)
@@ -106,12 +109,12 @@ def train(args):
 
     """prepare dataset"""
     dataset = CLDataset(
-        audio_path=config.audio_path, metadata_path=config.metadata_path,
+        audio_path=audio_path, metadata_path=metadata_path,
         q_type='raw', k_type='raw', data_crop_size=3,
         n_mels=n_mels, freq_shift_size=freq_shift_size
     )
-    dataloader = DataLoader(dataset, batch_size=batch_size,
-                            shuffle=True,  pin_memory=True)
+    dataloader = DataLoader(
+        dataset, batch_size=batch_size, shuffle=True,  pin_memory=True)
 
     """prepare models"""
     model = CLModel().to(device)
@@ -198,10 +201,4 @@ def train(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--ckpt', help='path to model check point')
-    parser.add_argument('-t', '--tboard', help='path to tensorboard')
-
-    args = parser.parse_args()
-
-    train(args)
+    train()
