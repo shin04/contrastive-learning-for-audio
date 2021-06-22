@@ -153,11 +153,11 @@ def run(cfg):
     https://github.com/karolpiczak/paper-2015-esc-convnet/issues/2
     """
     fold_dict_list = [
-        {"train": [1, 2, 4], "valid": [4], "test": [0]},
-        {"train": [2, 3, 4], "valid": [0], "test": [1]},
-        {"train": [0, 3, 4], "valid": [1], "test": [2]},
-        {"train": [0, 1, 4], "valid": [2], "test": [3]},
-        {"train": [0, 1, 2], "valid": [3], "test": [4]},
+        {"train": [2, 3, 4], "valid": [5], "test": [1]},
+        {"train": [3, 4, 5], "valid": [1], "test": [2]},
+        {"train": [1, 4, 5], "valid": [2], "test": [3]},
+        {"train": [1, 2, 5], "valid": [3], "test": [4]},
+        {"train": [1, 2, 3], "valid": [4], "test": [5]},
     ]
 
     print('FOLD')
@@ -233,13 +233,13 @@ def run(cfg):
             train_global_step, train_loss, train_acc = train(
                 trainloader, optimizer, device, train_global_step, model, criterion, writer, k_fold)
             valid(validloader, device, model, criterion)
-            test(testloader, device, model)
 
             writer.add_scalar(f"{k_fold}/loss/epoch", train_loss, epoch)
             writer.add_scalar(f"{k_fold}/acc/epoch", train_acc, epoch)
 
             print(
                 f'epoch: {epoch}/{n_epoch}, train loss: {train_loss}, train acc: {train_acc}')
+        test(testloader, device, model)
 
     writer.close()
 
