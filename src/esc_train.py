@@ -9,7 +9,6 @@ import torch.optim as optim
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 
-import config
 from datasets.esc_dataset import ESCDataset
 from models.esc_mlp import ESC_Model
 from models.cl_model import CLModel
@@ -111,7 +110,7 @@ def test(testloader, device, model):
     print(f'test acc: {valid_acc}')
 
 
-@ hydra.main(config_path='/ml/config', config_name='pretrain')
+@ hydra.main(config_path='/ml/config', config_name='esc')
 def run(cfg):
     """set config"""
     path_cfg = cfg['path']
@@ -122,11 +121,17 @@ def run(cfg):
     ts = datetime.now().strftime(TIME_TEMPLATE)
     print(f"TIMESTAMP: {ts}")
 
+    audio_path = Path(path_cfg['audio'])
+    meta_path = Path(path_cfg['meta'])
+    pretrain_model_path = Path(path_cfg['pretrain_model'])
+
     log_path = Path(path_cfg['tensorboard']) / ts
     if not log_path.exists():
         log_path.mkdir(parents=True)
 
     print('PATH')
+    print(f'audio: {audio_path}')
+    print(f'meta: {meta_path}')
     print(f'tensorboard: {log_path}')
 
     """set parameters"""
@@ -164,24 +169,24 @@ def run(cfg):
 
         """prepare dataset"""
         trainset = ESCDataset(
-            audio_path='/ml/dataset/esc/audio',
-            metadata_path='/ml/dataset/esc/meta/esc50.csv',
+            audio_path=audio_path,
+            metadata_path=meta_path,
             folds=fold_dict['train'],
             data_type='raw',
             data_crop_size=3
         )
 
         validset = ESCDataset(
-            audio_path='/ml/dataset/esc/audio',
-            metadata_path='/ml/dataset/esc/meta/esc50.csv',
+            audio_path=audio_path,
+            metadata_path=meta_path,
             folds=fold_dict['valid'],
             data_type='raw',
             data_crop_size=3
         )
 
         testset = ESCDataset(
-            audio_path='/ml/dataset/esc/audio',
-            metadata_path='/ml/dataset/esc/meta/esc50.csv',
+            audio_path=audio_path,
+            metadata_path=meta_path,
             folds=fold_dict['test'],
             data_type='raw',
             data_crop_size=3
@@ -196,8 +201,7 @@ def run(cfg):
 
         """prepare model"""
         cl_model = CLModel()
-        cl_model.load_state_dict(torch.load(
-            '../results/20210610112655/best.pt'))
+        cl_model.load_state_dict(torch.load(pretrain_model_path))
         state_dict_keys = list(cl_model.state_dict().keys())
 
         raw_model_dict = {}

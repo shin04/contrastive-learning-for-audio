@@ -2,8 +2,8 @@ device: cuda
 
 path:
   audio: /ml/dataset/esc/audio
-  meta: /ml/dataset/esc/meta
-  model: /ml/models/contrastive_learning
+  meta: /ml/dataset/esc/meta/esc50.csv
+  pretrain_model: /ml/results/20210619062615/best.pt
   tensorboard: /ml/log/esc/tensorboard
   result: /ml/results
 
