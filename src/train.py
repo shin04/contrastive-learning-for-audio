@@ -142,7 +142,7 @@ def train(cfg):
     model.train()
 
     """training"""
-    best_loss = -1
+    best_loss = 10000
     global_step = 0
     for epoch in range(s_epoch, n_epoch):
         print(f'epoch: {epoch}')
@@ -189,7 +189,7 @@ def train(cfg):
         if old_ckpt.exists():
             old_ckpt.unlink()
 
-        if best_loss < loss_epoch:
+        if best_loss > loss_epoch:
             best_loss = loss_epoch
             with open(result_path / 'best.pt', 'wb') as f:
                 torch.save(model.state_dict(), f)
