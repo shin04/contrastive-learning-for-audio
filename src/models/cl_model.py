@@ -1,5 +1,7 @@
+# import torch
 import torch.nn as nn
 import torch.nn.functional as F
+# from torch.utils.tensorboard import SummaryWriter
 
 from torchinfo import summary
 
@@ -61,5 +63,13 @@ class CLModel(nn.Module):
 
 
 if __name__ == '__main__':
-    model = CLModel().cuda()
-    summary(model, input_size=[(1024, 1, 160*1000), (1024, 1, 64, 1000)])
+    model = CLModel()
+    summary(model, input_size=[(32, 1, 160*1000), (32, 1, 64, 1000)])
+
+    # writer = SummaryWriter()
+
+    # fake_wave = torch.randn(1, 1, 160*1000)
+    # fake_mel = torch.randn(1, 1, 64, 1000)
+    # model = CLModel()
+    # writer.add_graph(model, [fake_wave, fake_mel])
+    # writer.close()
