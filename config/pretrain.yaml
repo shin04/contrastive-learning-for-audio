@@ -2,7 +2,7 @@ device: cuda
 
 path:
   audio: /ml/dataset/audioset/audio
-  meta: /ml/meta_train.csv
+  meta: /ml/meta/meta_train.csv
   model: /ml/models/contrastive_learning
   tensorboard: /ml/log/tensorboard
   result: /ml/results
