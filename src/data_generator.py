@@ -1,5 +1,6 @@
 from pathlib import Path
 import typing
+from multiprocessing import Pool
 
 import numpy as np
 import pandas as pd
@@ -56,26 +57,55 @@ def augmentation(
     return auged_data[np.newaxis, :, :]
 
 
+def batch_process(
+    metadata: Path, sr: int, aug_func: typing.Callable, batch_num: int,
+    win_sec: float, hop_sec: float, n_mels: int, freq_shift_size: int
+):
+    # print('wave data ...')
+    wave_data = load_data(metadata, sr)
+    np.save(f'../dataset/generated_dataset/20210629/wave_{batch_num}', wave_data)
+
+    # print('spec data ...')
+    auged_data = augmentation(
+        wave_data, sr, aug_func, win_sec, hop_sec, n_mels, freq_shift_size
+    )
+    np.save(f'../dataset/generated_dataset/20210629/spec_{batch_num}', auged_data)
+
+    print(f'batch {batch_num} completed !')
+
+
 def run():
     meta_path = Path('../meta/meta_train_not_mount.csv')
     batch_size = 32
+    sr = 22050
+    aug_func = mel_spec
+    win_sec = 0.2
+    hop_sec = 0.1
+    n_mels = 80
+    freq_shift_size = None
 
     meta_df = pd.read_csv(meta_path, header=None)
     metadata = meta_df[0].values.tolist()
 
     metadata_by_batch = devide_metadata(metadata, batch_size)
 
-    for i, _metadata in enumerate(metadata_by_batch):
-        print('='*10)
-        print(f'batch {i}/{batch_size}')
+    # for i, _metadata in enumerate(metadata_by_batch):
+    #     print('='*10)
+    #     print(f'batch {i}/{len(metadata) // batch_size}')
 
-        print('wave data ...')
-        wave_data = load_data(_metadata)
-        np.save(f'../dataset/generated_dataset/20210629/wave_{i}', wave_data)
+    with Pool(7) as pool:
+        preprocesses = [
+            pool.apply_async(
+                batch_process,
+                (
+                    metadata_by_batch[batch_num], sr, aug_func,
+                    batch_num, win_sec, hop_sec, n_mels, freq_shift_size
+                )
+            )
+            for batch_num in range(len(metadata_by_batch))
+        ]
 
-        print('spec data ...')
-        auged_data = augmentation(wave_data)
-        np.save(f'../dataset/generated_dataset/20210629/spec_{i}', auged_data)
+        [preprocess.get() for preprocess in preprocesses]
 
     print('complite!')
 
