@@ -63,13 +63,13 @@ def batch_process(
 ):
     # print('wave data ...')
     wave_data = load_data(metadata, sr)
-    np.save(f'../dataset/generated_dataset/20210629/wave_{batch_num}', wave_data)
+    np.save(f'/home/kajiwara21/nas02/home/dataset/AudioSet/generated_dataset/20210630/wave_{batch_num}', wave_data)
 
     # print('spec data ...')
     auged_data = augmentation(
         wave_data, sr, aug_func, win_sec, hop_sec, n_mels, freq_shift_size
     )
-    np.save(f'../dataset/generated_dataset/20210629/spec_{batch_num}', auged_data)
+    np.save(f'/home/kajiwara21/nas02/home/dataset/AudioSet/generated_dataset/20210630/spec_{batch_num}', auged_data)
 
     print(f'batch {batch_num} completed !')
 
