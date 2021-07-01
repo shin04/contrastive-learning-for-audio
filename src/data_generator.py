@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 import typing
 from multiprocessing import Pool
@@ -6,8 +7,11 @@ import numpy as np
 import pandas as pd
 import librosa
 from tqdm import tqdm
+import hydra
 
 from datasets.utils import random_crop, mel_spec
+
+TIME_TEMPLATE = '%Y%m%d%H%M%S'
 
 
 def devide_metadata(metadata: np.ndarray, batch_size: int = 32) -> np.ndarray:
@@ -58,24 +62,26 @@ def augmentation(
 
 
 def batch_process(
-    metadata: Path, sr: int, aug_func: typing.Callable, batch_num: int,
+    save_path: Path, metadata: Path, sr: int, aug_func: typing.Callable, batch_num: int,
     win_sec: float, hop_sec: float, n_mels: int, freq_shift_size: int
 ):
-    # print('wave data ...')
     wave_data = load_data(metadata, sr)
-    np.save(f'/home/kajiwara21/nas02/home/dataset/AudioSet/generated_dataset/20210630/wave_{batch_num}', wave_data)
+    np.save(save_path / f'wave_{batch_num}', wave_data)
 
-    # print('spec data ...')
     auged_data = augmentation(
         wave_data, sr, aug_func, win_sec, hop_sec, n_mels, freq_shift_size
     )
-    np.save(f'/home/kajiwara21/nas02/home/dataset/AudioSet/generated_dataset/20210630/spec_{batch_num}', auged_data)
+    np.save(save_path / f'spec_{batch_num}', auged_data)
 
     print(f'batch {batch_num} completed !')
 
 
-def run():
-    meta_path = Path('../meta/meta_train_not_mount.csv')
+@ hydra.main(config_path='../config', config_name='data_generation')
+def run(cfg):
+    ts = datetime.now().strftime(TIME_TEMPLATE)
+
+    save_path = Path(cfg['save_path']) / ts
+    meta_path = Path(cfg['meta_path'])
     batch_size = 32
     sr = 22050
     aug_func = mel_spec
@@ -89,16 +95,12 @@ def run():
 
     metadata_by_batch = devide_metadata(metadata, batch_size)
 
-    # for i, _metadata in enumerate(metadata_by_batch):
-    #     print('='*10)
-    #     print(f'batch {i}/{len(metadata) // batch_size}')
-
     with Pool(7) as pool:
         preprocesses = [
             pool.apply_async(
                 batch_process,
                 (
-                    metadata_by_batch[batch_num], sr, aug_func,
+                    save_path, metadata_by_batch[batch_num], sr, aug_func,
                     batch_num, win_sec, hop_sec, n_mels, freq_shift_size
                 )
             )
