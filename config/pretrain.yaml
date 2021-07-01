@@ -8,7 +8,11 @@ path:
   result: /ml/results
 
 preprocess:
-  audio_crop_size: 3
+  dataset_type: "raw" # raw or cldataset
+  sr: 32000
+  crop_sec: 3 # [s]
+  win_sec: 0.2 # [s]
+  hop_sec: 0.1 # [s]
   n_mels: 80
   freq_shift_size: 20
 

@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 
-from datasets.audioset import CLDataset
+from datasets.audioset import CLDataset, AudioSet
 from models.cl_model import CLModel
 from utils.cosine_decay_rule import CosineDecayScheduler
 
@@ -40,7 +40,7 @@ def nt_xent_loss(q, pos_k, temperature):
     return loss
 
 
-@ hydra.main(config_path='/ml/config', config_name='pretrain')
+@ hydra.main(config_path='../config', config_name='pretrain')
 def train(cfg):
     """set config"""
     path_cfg = cfg['path']
@@ -79,7 +79,7 @@ def train(cfg):
         result_path.mkdir(parents=True)
 
     print("PATH")
-    # print("audio path: ", audio_path)
+    print("audio path: ", audio_path)
     print("metadata:", metadata_path)
     print("checkpoint:", model_ckpt_path)
     print("best model:", result_path)
@@ -92,32 +92,49 @@ def train(cfg):
     lr = train_cfg['lr']
     temperature = train_cfg['temperature']
 
+    dataset_type = preprocess_cfg['dataset_type']
+    sr = preprocess_cfg['sr']
+    crop_sec = preprocess_cfg['crop_sec']
     n_mels = preprocess_cfg['n_mels']
     freq_shift_size = preprocess_cfg['freq_shift_size']
 
     print("TRAINING PARAMETERS")
     print("device:", device)
     print("n_epoch:", n_epoch)
-    print("temperature:", temperature)
-    print("lr:", lr)
     print("batch_size:", batch_size)
+    print("lr:", lr)
+    print("temperature:", temperature)
+    print("dataset type", dataset_type)
+    print("sr", sr)
+    print("crop secconds", crop_sec)
     print("n_mels:", n_mels)
-    print("freq_shift_size:", freq_shift_size)
+    print("frequency shift size:", freq_shift_size)
 
     """tensorboard"""
     writer = SummaryWriter(log_dir=log_path)
 
     """prepare dataset"""
-    dataset = CLDataset(
-        audio_path=audio_path, metadata_path=metadata_path,
-        q_type='raw', k_type='raw', data_crop_size=3,
-        n_mels=n_mels, freq_shift_size=freq_shift_size
-    )
+    if dataset_type == 'cldataset':
+       dataset = CLDataset(
+            audio_path=audio_path, metadata_path=metadata_path,
+            q_type='raw', k_type='raw', crop_sec=crop_sec,
+            n_mels=n_mels, freq_shift_size=freq_shift_size
+        )
+    else:
+        dataset = AudioSet(
+            metadata_path=Path(metadata_path),
+            sr=sr,
+            crop_sec=crop_sec,
+        )
     dataloader = DataLoader(
         dataset, batch_size=batch_size, shuffle=True,  pin_memory=True)
 
     """prepare models"""
-    model = CLModel().to(device)
+    if dataset_type == 'cldataset':
+        model = CLModel().to(device)
+    else:
+        model = CLModel(preprocess_cfg, is_preprocess=True).to(device)
+
     optimizer = optim.Adam(model.parameters(), lr=lr, amsgrad=False)
     lr_scheduler_func = CosineDecayScheduler(base_lr=1, max_epoch=n_epoch)
     lr_scheduler = torch.optim.lr_scheduler.LambdaLR(
@@ -150,11 +167,16 @@ def train(cfg):
         loss_epoch = 0
 
         for step in range(len(dataloader)):
-            (q, pos_k, _) = next(iter(dataloader))
-            q = q.to(device)
-            pos_k = pos_k.to(device)
+            if dataset_type == 'cldataset':
+                (q, pos_k, _) = next(iter(dataloader))
+                q = q.to(device)
+                pos_k = pos_k.to(device)
 
-            z_i, z_j = model(q, pos_k)
+                z_i, z_j = model(q, pos_k)
+            else:
+                q = next(iter(dataloader))
+                q = q.to(device)
+                z_i, z_j = model(q)
 
             loss = nt_xent_loss(z_i, z_j, temperature)
 

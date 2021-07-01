@@ -63,8 +63,8 @@ def mel_spec(input: np.ndarray, sr: int, win_size: int, hop_len: int, n_mels: in
 if __name__ == '__main__':
     """mixing"""
     print("==mixing"+"="*10)
-    data = 2 * np.random.rand(22050*10) - 1
-    noise = 100 * np.random.rand(22050*10)
+    data = 2 * np.random.rand(32000*10) - 1
+    noise = 100 * np.random.rand(32000*10)
 
     mixed_data, alpha = mixing(data, noise)
 
@@ -75,7 +75,7 @@ if __name__ == '__main__':
 
     """frequency shift"""
     print("==frequency shift"+"="*10)
-    sr = 22050
+    sr = 32000
     data = 2 * np.random.rand(sr*3) - 1
     win_size = int(0.2*sr)
     hop_len = int(0.1*sr)
