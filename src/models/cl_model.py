@@ -78,9 +78,6 @@ class CLModel(nn.Module):
             log_offset = 1e-6
             k = torch.log(k + log_offset)
 
-        print(q.shape)
-        print(k.shape)
-
         h_i = self.raw_model(q)
         h_j = self.spec_model(k)
 
@@ -96,7 +93,7 @@ if __name__ == '__main__':
 
     model = CLModel(
         cfg={
-            'sr': 22050,
+            'sr': 32000,
             'n_mels': 80, 
             'win_sec': 0.2, 
             'hop_sec': 0.1, 
