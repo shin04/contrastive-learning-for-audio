@@ -17,6 +17,30 @@ class DataType(Enum):
     LOGMEL = 'logmel'
     MFCC = 'mfcc'
 
+class AudioSet(Dataset):
+    def __init__(self, metadata_path: Path, sr: int = 22050, crop_sec: int = None):
+        meta_df = pd.read_csv(metadata_path)
+
+        self.audio_pathes = df[0].values.tolist()
+        self.sr = sr
+        if crop_sec is None:
+            self.crop_size = None
+        else:
+            self.crop_size = crop_sec * sr
+
+    def __len__(self):
+        return len(self.audio_pathes)
+
+    def __getitem__(self, idx: int):
+        audio_path = self.audio_pathes[idx]
+
+        wave_data, _ = sf.read(audio_path, samplerate=self.sr)
+        
+        if self.crop_size is not None:
+            wave_data, _ = random_crop(wave_data, self.crop_size)
+
+        return np.float32(wave_data)
+
 
 class CLDataset(Dataset):
     def __init__(
