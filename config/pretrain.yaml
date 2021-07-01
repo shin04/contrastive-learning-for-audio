@@ -8,8 +8,11 @@ path:
   result: /ml/results
 
 preprocess:
+  sr: 22050
   audio_crop_size: 3
   n_mels: 80
+  win_sec: 0.2
+  hop_sec: 0.1
   freq_shift_size: 20
 
 training:
