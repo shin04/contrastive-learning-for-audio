@@ -97,7 +97,7 @@ class CLDataset(Dataset):
 if __name__ == '__main__':
     dataset = CLDataset(
         audio_path='/ml/dataset/audioset/audio/balanced_train_segments',
-        metadata_path='/home/kajiwara21/work/contrastive-learning-for-audio/meta_train.csv',
+        metadata_path='/ml/meta_train.csv',
         freq_shift_size=20
     )
 
@@ -105,7 +105,7 @@ if __name__ == '__main__':
     print(dataset[0][0].shape)
 
     dataset = AudioSet(
-        metadata_path='/home/kajiwara21/work/contrastive-learning-for-audio/meta_train.csv',
+        metadata_path='/ml/meta_train.csv',
         sr=32000,
         crop_sec=3,
     )
