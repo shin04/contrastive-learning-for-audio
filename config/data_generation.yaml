@@ -1,2 +1,3 @@
-meta_path: "../meta/meta_train_not_mount.csv"
-save_path: "/home/kajiwara21/nas02/home/dataset/AudioSet/generated_dataset"
+meta_path: ../meta/meta_train_not_mount.csv
+save_path: /home/kajiwara21/nas02/home/dataset/AudioSet/generated_dataset
+format: hdf5 # hdf5 or npy

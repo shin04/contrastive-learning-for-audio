@@ -8,6 +8,7 @@ import pandas as pd
 import librosa
 from tqdm import tqdm
 import hydra
+import h5py
 
 from datasets.utils import random_crop, mel_spec
 
@@ -63,15 +64,22 @@ def augmentation(
 
 def batch_process(
     save_path: Path, metadata: Path, sr: int, aug_func: typing.Callable, batch_num: int,
-    win_sec: float, hop_sec: float, n_mels: int, freq_shift_size: int
+    win_sec: float, hop_sec: float, n_mels: int, freq_shift_size: int, format: str
 ):
     wave_data = load_data(metadata, sr)
-    np.save(save_path / f'wave_{batch_num}', wave_data)
 
     auged_data = augmentation(
         wave_data, sr, aug_func, win_sec, hop_sec, n_mels, freq_shift_size
     )
-    np.save(save_path / f'spec_{batch_num}', auged_data)
+
+    if format == 'hdf5':
+        p = save_path / f'wave_{batch_num}.hdf5'
+        with h5py.File(p, 'w') as f:
+            f.create_dataset('wave', data=wave_data)
+            f.create_dataset('spec', data=auged_data)
+    else:
+        np.save(save_path / f'wave_{batch_num}', wave_data)
+        np.save(save_path / f'spec_{batch_num}', auged_data)
 
     print(f'batch {batch_num} completed !')
 
@@ -82,6 +90,8 @@ def run(cfg):
 
     save_path = Path(cfg['save_path']) / ts
     meta_path = Path(cfg['meta_path'])
+    format = cfg['format']
+
     batch_size = 32
     sr = 22050
     aug_func = mel_spec
@@ -101,7 +111,7 @@ def run(cfg):
                 batch_process,
                 (
                     save_path, metadata_by_batch[batch_num], sr, aug_func,
-                    batch_num, win_sec, hop_sec, n_mels, freq_shift_size
+                    batch_num, win_sec, hop_sec, n_mels, freq_shift_size, format
                 )
             )
             for batch_num in range(len(metadata_by_batch))
