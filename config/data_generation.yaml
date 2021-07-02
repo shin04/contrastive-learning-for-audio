@@ -1,3 +1,11 @@
 meta_path: ../meta/meta_train_not_mount.csv
 save_path: /home/kajiwara21/nas02/home/dataset/AudioSet/generated_dataset
 format: hdf5 # hdf5 or npy
+
+batch_size: 32 # if -1, generate fullsize dataset
+sr: 32000
+aug_func_name: mel_spec
+win_sec: 0.2
+hop_sec: 0.1
+n_mels: 80
+freq_shift_size: 20

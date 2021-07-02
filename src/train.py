@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 
-from datasets.audioset import CLDataset, AudioSet
+from datasets.audioset import CLDataset, AudioSetDataset
 from models.cl_model import CLModel
 from utils.cosine_decay_rule import CosineDecayScheduler
 
@@ -114,13 +114,13 @@ def train(cfg):
 
     """prepare dataset"""
     if dataset_type == 'cldataset':
-       dataset = CLDataset(
+        dataset = CLDataset(
             audio_path=audio_path, metadata_path=metadata_path,
             q_type='raw', k_type='raw', crop_sec=crop_sec,
             n_mels=n_mels, freq_shift_size=freq_shift_size
         )
     else:
-        dataset = AudioSet(
+        dataset = AudioSetDataset(
             metadata_path=Path(metadata_path),
             sr=sr,
             crop_sec=crop_sec,
