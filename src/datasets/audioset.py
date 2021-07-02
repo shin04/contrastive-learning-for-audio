@@ -68,8 +68,7 @@ class HDF5Dataset(Dataset):
 
         mode = 'train' if is_training else 'eval'
         hdf5_path_list = [
-            # p for p in hdf5_dir_path.glob('*.h5') if mode in str(p)
-            '/ml/dataset/hdf5/waveform/balanced_train.h5'
+            p for p in hdf5_dir_path.glob('*.h5') if mode in str(p)
         ]
 
         self.data_len = 0
@@ -92,12 +91,14 @@ class HDF5Dataset(Dataset):
 
         with h5py.File(p, 'r') as hf:
             waveform = hf['waveform'][self.data_idxes[idx]]
-            target = hf['waveform'][self.data_idxes[idx]]
+            # target = hf['waveform'][self.data_idxes[idx]]
 
         if self.crop_size is not None:
             waveform, _ = random_crop(waveform, self.crop_size)
 
-        return waveform, target
+        waveform = waveform.reshape((1, -1))
+
+        return np.float32(waveform)
 
 
 class CLDataset(Dataset):
