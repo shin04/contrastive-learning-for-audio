@@ -6,6 +6,7 @@ __pycache__
 
 *csv
 *log
+*h5
 
 .env*
 

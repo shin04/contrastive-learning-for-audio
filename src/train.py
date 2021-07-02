@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 
-from datasets.audioset import CLDataset, AudioSet
+from datasets.audioset import CLDataset, AudioSetDataset, HDF5Dataset
 from models.cl_model import CLModel
 from utils.cosine_decay_rule import CosineDecayScheduler
 
@@ -48,6 +48,7 @@ def train(cfg):
 
     """set pathes"""
     audio_path = path_cfg['audio']
+    hdf_path = path_cfg['hdf']
     metadata_path = path_cfg['meta']
 
     if train_cfg['ckpt'] == -1:
@@ -79,6 +80,7 @@ def train(cfg):
 
     print("PATH")
     print("audio path: ", audio_path)
+    print("hdf path:", hdf_path)
     print("metadata:", metadata_path)
     print("checkpoint:", model_ckpt_path)
     print("best model:", result_path)
@@ -91,6 +93,7 @@ def train(cfg):
     lr = train_cfg['lr']
     temperature = train_cfg['temperature']
 
+    preprocessing_in_model = preprocess_cfg['in_model']
     dataset_type = preprocess_cfg['dataset_type']
     sr = preprocess_cfg['sr']
     crop_sec = preprocess_cfg['crop_sec']
@@ -103,6 +106,7 @@ def train(cfg):
     print("batch_size:", batch_size)
     print("lr:", lr)
     print("temperature:", temperature)
+    print("preprocesing in model:", preprocessing_in_model)
     print("dataset type", dataset_type)
     print("sr", sr)
     print("crop secconds", crop_sec)
@@ -114,25 +118,24 @@ def train(cfg):
 
     """prepare dataset"""
     if dataset_type == 'cldataset':
-       dataset = CLDataset(
+        dataset = CLDataset(
             audio_path=audio_path, metadata_path=metadata_path,
             q_type='raw', k_type='raw', crop_sec=crop_sec,
             n_mels=n_mels, freq_shift_size=freq_shift_size
         )
+    elif dataset_type == 'hdf5':
+        dataset = HDF5Dataset(hdf5_dir=hdf_path, crop_sec=crop_sec)
     else:
-        dataset = AudioSet(
-            metadata_path=Path(metadata_path),
-            sr=sr,
-            crop_sec=crop_sec,
-        )
+        dataset = AudioSetDataset(
+            metadata_path=Path(metadata_path), sr=sr, crop_sec=crop_sec,)
     dataloader = DataLoader(
         dataset, batch_size=batch_size, shuffle=True,  pin_memory=True)
 
     """prepare models"""
-    if dataset_type == 'cldataset':
-        model = CLModel().to(device)
-    else:
+    if preprocessing_in_model:
         model = CLModel(preprocess_cfg, is_preprocess=True).to(device)
+    else:
+        model = CLModel().to(device)
 
     optimizer = optim.Adam(model.parameters(), lr=lr, amsgrad=False)
     lr_scheduler_func = CosineDecayScheduler(base_lr=1, max_epoch=n_epoch)
@@ -166,16 +169,15 @@ def train(cfg):
         loss_epoch = 0
 
         for step in range(len(dataloader)):
-            if dataset_type == 'cldataset':
-                (q, pos_k, _) = next(iter(dataloader))
-                q = q.to(device)
-                pos_k = pos_k.to(device)
-
-                z_i, z_j = model(q, pos_k)
-            else:
+            if preprocessing_in_model:
                 q = next(iter(dataloader))
                 q = q.to(device)
                 z_i, z_j = model(q)
+            else:
+                (q, pos_k, _) = next(iter(dataloader))
+                q = q.to(device)
+                pos_k = pos_k.to(device)
+                z_i, z_j = model(q, pos_k)
 
             loss = nt_xent_loss(z_i, z_j, temperature)
 

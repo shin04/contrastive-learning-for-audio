@@ -9,3 +9,4 @@ tensorboard==2.5.0
 hydra-core==1.1.0
 jupyterlab==3.0.16
 ipykernel==6.0.0
+h5py==3.3.0

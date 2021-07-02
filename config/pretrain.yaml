@@ -2,13 +2,15 @@ device: cuda
 
 path:
   audio: /ml/dataset/audioset/audio
+  hdf: /ml/dataset/hdf5
   meta: /ml/meta/meta_train.csv
   model: /ml/models/contrastive_learning
   tensorboard: /ml/log/tensorboard
   result: /ml/results
 
 preprocess:
-  dataset_type: "raw" # raw or cldataset
+  in_model: True
+  dataset_type: "hdf5" # raw or cldataset or hdf5
   sr: 32000
   crop_sec: 3 # [s]
   win_sec: 0.2 # [s]

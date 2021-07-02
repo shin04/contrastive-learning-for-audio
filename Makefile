@@ -8,9 +8,11 @@ build:
 
 run:
 	docker run -it \
+		--env HDF5_USE_FILE_LOCKING='FALSE'
 		--shm-size=4g \
 		--mount type=bind,source=$(MOUNT_PATH),target=/ml \
 		--mount type=bind,source=$(DATASET_PATH),target=/ml/dataset/audioset \
+		--mount type=bind,source=$(HDF5_PATH),target=/ml/dataset/hdf5 \
 		--mount type=bind,source=$(ESC_PATH),target=/ml/dataset/esc \
 		--mount type=bind,source=$(MODEL_PATH),target=/ml/models \
 		--name $(CONTAINER_NAME) \
