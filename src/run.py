@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 
-from datasets.audioset import CLDataset, AudioSetDataset, HDF5Dataset
+from datasets.audioset import AudioSetDataset, HDF5Dataset
 from models.cl_model import CLModel
 from utils.scheduler import CosineDecayScheduler
 from utils.losses import nt_xent_loss
@@ -71,7 +71,6 @@ def train(cfg):
     lr = train_cfg['lr']
     temperature = train_cfg['temperature']
 
-    preprocessing_in_model = preprocess_cfg['in_model']
     dataset_type = preprocess_cfg['dataset_type']
     sr = preprocess_cfg['sr']
     crop_sec = preprocess_cfg['crop_sec']
@@ -84,7 +83,6 @@ def train(cfg):
     print("batch_size:", batch_size)
     print("lr:", lr)
     print("temperature:", temperature)
-    print("preprocesing in model:", preprocessing_in_model)
     print("dataset type", dataset_type)
     print("sr", sr)
     print("crop secconds", crop_sec)
@@ -95,13 +93,7 @@ def train(cfg):
     writer = SummaryWriter(log_dir=log_path)
 
     """prepare dataset"""
-    if dataset_type == 'cldataset':
-        dataset = CLDataset(
-            metadata_path=metadata_path,
-            q_type='raw', k_type='raw', crop_sec=crop_sec,
-            n_mels=n_mels, freq_shift_size=freq_shift_size
-        )
-    elif dataset_type == 'hdf5':
+    if dataset_type == 'hdf5':
         dataset = HDF5Dataset(hdf5_dir=hdf_path, crop_sec=crop_sec)
     else:
         dataset = AudioSetDataset(
@@ -110,10 +102,7 @@ def train(cfg):
         dataset, batch_size=batch_size, shuffle=True, num_workers=0, pin_memory=False)
 
     """prepare models"""
-    if preprocessing_in_model:
-        model = CLModel(preprocess_cfg, is_preprocess=True).to(device)
-    else:
-        model = CLModel().to(device)
+    model = CLModel(preprocess_cfg).to(device)
 
     optimizer = optim.Adam(model.parameters(), lr=lr, amsgrad=False)
     lr_scheduler_func = CosineDecayScheduler(base_lr=1, max_epoch=n_epoch)
@@ -149,15 +138,9 @@ def train(cfg):
         for step in range(len(dataloader)):
             s_time = time.time()
 
-            if preprocessing_in_model:
-                q = next(iter(dataloader))
-                q = q.to(device)
-                z_i, z_j = model(q)
-            else:
-                (q, pos_k, _) = next(iter(dataloader))
-                q = q.to(device)
-                pos_k = pos_k.to(device)
-                z_i, z_j = model(q, pos_k)
+            q = next(iter(dataloader))
+            q = q.to(device)
+            z_i, z_j = model(q)
 
             loss = nt_xent_loss(z_i, z_j, temperature)
 
@@ -169,7 +152,8 @@ def train(cfg):
             process_time = time.time() - s_time
 
             if step % 100 == 0:
-                print(f"Step [{step}/{len(dataloader)}], Loss: {loss.item()}, Time: {process_time}")
+                print(
+                    f"Step [{step}/{len(dataloader)}], Loss: {loss.item()}, Time: {process_time}")
 
             writer.add_scalar("Loss/train_epoch", loss.item(), global_step)
 

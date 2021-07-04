@@ -9,8 +9,7 @@ path:
   result: /ml/results
 
 preprocess:
-  in_model: True
-  dataset_type: "hdf5" # raw or cldataset or hdf5
+  dataset_type: "hdf5" # raw or hdf5
   sr: 32000
   crop_sec: 3 # [s]
   win_sec: 0.2 # [s]

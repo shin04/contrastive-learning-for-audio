@@ -100,56 +100,7 @@ class AudioSetDataset(Dataset):
         return np.float32(wave_data)
 
 
-class CLDataset(Dataset):
-    def __init__(
-        self, metadata_path: str,
-        q_type: DataType = 'raw',
-        k_type: DataType = 'raw',
-        crop_sec=3,
-        n_mels: int = 80,
-        freq_shift_size: int = None
-    ):
-        df = pd.read_csv(Path(metadata_path), header=None)
-        self.audio_names = df[0].values.tolist()
-
-        self.q_type = q_type
-        self.k_type = k_type
-        self.crop_sec = crop_sec
-        self.n_mels = n_mels
-        self.freq_shift_size = freq_shift_size
-
-    def __len__(self):
-        return len(self.audio_names)
-
-    def __getitem__(self, idx):
-        data_path = self.audio_names[idx]
-
-        wave_data, sr = sf.read(data_path)
-
-        crop_size = self.crop_sec * sr
-        crop_data, _ = random_crop(wave_data, crop_size)
-
-        q_data = crop_data
-        q_data = q_data.reshape((1, -1))
-
-        win_size = int(0.2*sr)
-        hop_len = int(0.1*sr)
-        mel = mel_spec(
-            crop_data, sr, win_size, hop_len, self.n_mels, self.freq_shift_size)
-
-        pos_k_data = mel[np.newaxis, :, :]
-
-        return np.float32(q_data), np.float32(pos_k_data), sr
-
-
 if __name__ == '__main__':
-    dataset = CLDataset(
-        metadata_path='/ml/meta/meta_train.csv',
-        freq_shift_size=20
-    )
-    print(len(dataset))
-    print(dataset[0][0].shape)
-
     dataset = AudioSetDataset(
         metadata_path='/ml/meta/meta_train.csv',
         sr=32000,

@@ -41,7 +41,7 @@ class Projection(nn.Module):
 
 
 class CLModel(nn.Module):
-    def __init__(self, cfg=None, is_preprocess: bool=False, is_training: bool=True):
+    def __init__(self, cfg=None, is_preprocess: bool = True, is_training: bool = True):
         super(CLModel, self).__init__()
 
         self.is_preprocess = is_preprocess
@@ -54,7 +54,7 @@ class CLModel(nn.Module):
             n_mels = cfg['n_mels']
 
             self.mel_spec_trans = audio_nn.MelSpectrogram(
-                sample_rate=sr, 
+                sample_rate=sr,
                 n_fft=win_size,
                 win_length=win_size,
                 hop_length=hop_len,
@@ -66,7 +66,6 @@ class CLModel(nn.Module):
 
         self.projection = Projection(
             in_channels=512, hidden_dim=512, out_channels=128)
-
 
     def forward(self, q, k=None):
         """
@@ -94,9 +93,9 @@ if __name__ == '__main__':
     model = CLModel(
         cfg={
             'sr': 32000,
-            'n_mels': 80, 
-            'win_sec': 0.2, 
-            'hop_sec': 0.1, 
+            'n_mels': 80,
+            'win_sec': 0.2,
+            'hop_sec': 0.1,
             # 'freq_shift_size': 20
         },
         is_preprocess=True
