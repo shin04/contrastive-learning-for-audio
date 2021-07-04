@@ -163,9 +163,9 @@ def train(cfg):
 
             process_time = time.time() - s_time
 
-            # if step % 100 == 0:
-            print(
-                f"Step [{step}/{len(dataloader)}], Loss: {loss.item()}, Time: {process_time}")
+            if step % 100 == 0:
+                print(
+                    f"Step [{step}/{len(dataloader)}], Loss: {loss.item()}, Time: {process_time}")
 
             if not debug:
                 writer.add_scalar("Loss/train_epoch", loss.item(), global_step)
