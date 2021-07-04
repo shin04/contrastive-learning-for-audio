@@ -19,6 +19,7 @@ preprocess:
   freq_shift_size: 20
 
 training:
+  num_worker: -1 # if -1, use os.cpu_count()
   n_epoch: 100
   batch_size: 32
   lr: 0.001
