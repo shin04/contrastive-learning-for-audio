@@ -8,7 +8,6 @@ from torchinfo import summary
 
 from models.raw_model import Conv160
 from models.spec_model import CNN6
-from datasets.utils import random_crop, mel_spec
 
 # https://colab.research.google.com/drive/1UK8BD3xvTpuSj75blz8hThfXksh19YbA?usp=sharing#scrollTo=7JOQBJplT_mw
 
