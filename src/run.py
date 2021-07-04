@@ -20,6 +20,7 @@ TIME_TEMPLATE = '%Y%m%d%H%M%S'
 @ hydra.main(config_path='../config', config_name='pretrain')
 def train(cfg):
     """set config"""
+    debug = cfg['debug']
     path_cfg = cfg['path']
     preprocess_cfg = cfg['preprocess']
     train_cfg = cfg['training']
@@ -34,33 +35,35 @@ def train(cfg):
     else:
         ts = str(train_cfg['ckpt'])
     print(f"TIMESTAMP: {ts}")
+    print(f"DEBUG MODE: ", debug)
 
     # checkpoint path
     model_ckpt_path = Path(path_cfg['model']) / ts
-    if not model_ckpt_path.exists():
+    if (not debug) and (not model_ckpt_path.exists()):
         if train_cfg['ckpt'] != -1:
             raise RuntimeError('checkpoint file is not found')
         model_ckpt_path.mkdir(parents=True)
 
     # tensorboard path
     log_path = Path(path_cfg['tensorboard']) / ts
-    if not log_path.exists():
+    if (not debug) and (not log_path.exists()):
         if train_cfg['ckpt'] != -1:
             raise RuntimeError('tensorboard log file is not found')
         log_path.mkdir(parents=True)
 
     # result path
     result_path = Path(path_cfg['result']) / ts
-    if not result_path.exists():
+    if (not debug) and (not result_path.exists()):
         result_path.mkdir(parents=True)
 
     print("PATH")
     print("audio path: ", audio_path)
     print("hdf path:", hdf_path)
     print("metadata:", metadata_path)
-    print("checkpoint:", model_ckpt_path)
-    print("best model:", result_path)
-    print("tensorboard:", log_path)
+    if not debug:
+        print("checkpoint:", model_ckpt_path)
+        print("best model:", result_path)
+        print("tensorboard:", log_path)
 
     """set training parameter"""
     device = torch.device(cfg['device'])
@@ -88,7 +91,8 @@ def train(cfg):
     print("frequency shift size:", freq_shift_size)
 
     """tensorboard"""
-    writer = SummaryWriter(log_dir=log_path)
+    if not debug:
+        writer = SummaryWriter(log_dir=log_path)
 
     """prepare dataset"""
     if dataset_type == 'hdf5':
@@ -108,20 +112,20 @@ def train(cfg):
         optimizer, lr_lambda=lr_scheduler_func)
 
     """if exist pretrained model checkpoint, use it"""
-    if len(list(model_ckpt_path.glob(r'model-epoch-*.ckpt'))) > 0:
-        ckpt_file = list(model_ckpt_path.glob(r'model-epoch-*.ckpt'))[0]
-        checkpoint = torch.load(ckpt_file)
-        print(f'use checkpoint at {ckpt_file}')
-        print(f'epoch: {checkpoint["epoch"]}')
-        print(f'loss: {checkpoint["loss"]}')
+    s_epoch = 0
+    if not debug:
+        if len(list(model_ckpt_path.glob(r'model-epoch-*.ckpt'))) > 0:
+            ckpt_file = list(model_ckpt_path.glob(r'model-epoch-*.ckpt'))[0]
+            checkpoint = torch.load(ckpt_file)
+            print(f'use checkpoint at {ckpt_file}')
+            print(f'epoch: {checkpoint["epoch"]}')
+            print(f'loss: {checkpoint["loss"]}')
 
-        model.load_state_dict(checkpoint['model_state_dict'])
-        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        lr_scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-        s_epoch = checkpoint['epoch'] + 1
-        loss = checkpoint['loss']
-    else:
-        s_epoch = 0
+            model.load_state_dict(checkpoint['model_state_dict'])
+            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            lr_scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+            s_epoch = checkpoint['epoch'] + 1
+            loss = checkpoint['loss']
 
     model.train()
 
@@ -155,38 +159,45 @@ def train(cfg):
                 print(
                     f"Step [{step}/{len(dataloader)}], Loss: {loss.item()}, Time: {process_time}")
 
-            writer.add_scalar("Loss/train_epoch", loss.item(), global_step)
+            if not debug:
+                writer.add_scalar("Loss/train_epoch", loss.item(), global_step)
 
             loss_epoch += loss.item()
             global_step += 1
 
         print(
             f"Epoch [{epoch}/{n_epoch}],  Loss: {loss_epoch / len(dataloader)},  lr: {lr_scheduler.get_last_lr()}")
-        writer.add_scalar("Loss/train", loss_epoch / len(dataloader), epoch)
-        writer.add_scalar("learning_rate", lr, epoch)
 
-        torch.save({
-            'epoch': epoch,
-            'model_state_dict': model.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
-            'scheduler_state_dict': lr_scheduler.state_dict(),
-            'loss': loss_epoch,
-        }, model_ckpt_path/f'model-epoch-{epoch}.ckpt')
-        old_ckpt = Path(model_ckpt_path/f'model-epoch-{epoch-1}.ckpt')
+        if not debug:
+            writer.add_scalar("Loss/train", loss_epoch /
+                              len(dataloader), epoch)
+            writer.add_scalar("learning_rate", lr, epoch)
 
-        # if prior check point exist, delete it
-        if old_ckpt.exists():
-            old_ckpt.unlink()
+            torch.save({
+                'epoch': epoch,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'scheduler_state_dict': lr_scheduler.state_dict(),
+                'loss': loss_epoch,
+            }, model_ckpt_path/f'model-epoch-{epoch}.ckpt')
+            old_ckpt = Path(model_ckpt_path/f'model-epoch-{epoch-1}.ckpt')
 
-        if best_loss > loss_epoch:
-            best_loss = loss_epoch
-            with open(result_path / 'best.pt', 'wb') as f:
-                torch.save(model.state_dict(), f)
+            # if prior check point exist, delete it
+            if old_ckpt.exists():
+                old_ckpt.unlink()
+
+            if best_loss > loss_epoch:
+                best_loss = loss_epoch
+                with open(result_path / 'best.pt', 'wb') as f:
+                    torch.save(model.state_dict(), f)
 
         lr_scheduler.step()
 
-    print(f'complete training: {result_path}')
-    writer.close()
+    if not debug:
+        print(f'complete training: {result_path}')
+        writer.close()
+    else:
+        print('complete training')
 
 
 if __name__ == '__main__':
