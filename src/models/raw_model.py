@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -5,7 +6,7 @@ from torchinfo import summary
 
 
 class ConvBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, stride, padding):
+    def __init__(self, in_channels: int, out_channels: int, kernel_size: int, stride: int, padding: int) -> None:
         super(ConvBlock, self).__init__()
 
         self.conv = nn.Conv1d(
@@ -18,7 +19,7 @@ class ConvBlock(nn.Module):
         )
         self.group_norm = nn.GroupNorm(out_channels//2, out_channels)
 
-    def forward(self, input):
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
         x = self.conv(input)
         x = self.group_norm(x)
         x = F.relu(x)
@@ -30,7 +31,7 @@ class ConvBlock(nn.Module):
 
 
 class Conv160(nn.Module):
-    def __init__(self, is_training=True):
+    def __init__(self, is_training: bool = True) -> None:
         super(Conv160, self).__init__()
 
         self.is_training = is_training
@@ -65,7 +66,7 @@ class Conv160(nn.Module):
             kernel_size=4, stride=2, padding=1
         )
 
-    def forward(self, input):
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
         x = self.conv1(input)
         x = F.dropout(x, p=0.2, training=self.is_training)
 

@@ -102,7 +102,7 @@ def train(cfg):
         dataset, batch_size=batch_size, shuffle=True, num_workers=0, pin_memory=False)
 
     """prepare models"""
-    model = CLModel(preprocess_cfg).to(device)
+    model = CLModel(cfg=preprocess_cfg, is_preprocess=True).to(device)
 
     optimizer = optim.Adam(model.parameters(), lr=lr, amsgrad=False)
     lr_scheduler_func = CosineDecayScheduler(base_lr=1, max_epoch=n_epoch)

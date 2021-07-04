@@ -1,9 +1,8 @@
-import numpy as np
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchaudio.transforms as audio_nn
+from omegaconf import DictConfig
 
 from torchinfo import summary
 
@@ -15,7 +14,7 @@ from datasets.utils import random_crop, mel_spec
 
 
 class Projection(nn.Module):
-    def __init__(self, in_channels, hidden_dim, out_channels):
+    def __init__(self, in_channels: int, hidden_dim: int, out_channels: int) -> None:
         super().__init__()
         self.in_channels = in_channels
         self.hidden_dim = hidden_dim
@@ -28,7 +27,7 @@ class Projection(nn.Module):
         self.linear2 = nn.Linear(
             self.hidden_dim, self.out_channels, bias=False)
 
-    def forward(self, input):
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
 
         x = self.pool1d(input)
         x = self.flatten(x)
@@ -41,8 +40,12 @@ class Projection(nn.Module):
 
 
 class CLModel(nn.Module):
-    def __init__(self, cfg=None, is_preprocess: bool = True, is_training: bool = True):
+    def __init__(self, cfg: DictConfig = None, is_preprocess: bool = False, is_training: bool = True) -> None:
         super(CLModel, self).__init__()
+
+        if (cfg is None) and is_preprocess:
+            raise RuntimeError(
+                '`cfg` is not None, when `is_preprocess` is True.')
 
         self.is_preprocess = is_preprocess
         self.is_training = is_training
@@ -67,7 +70,7 @@ class CLModel(nn.Module):
         self.projection = Projection(
             in_channels=512, hidden_dim=512, out_channels=128)
 
-    def forward(self, q, k=None):
+    def forward(self, q: torch.Tensor, k: torch.Tensor = None) -> torch.Tensor:
         """
         if runnning preprocess in model, you pass augment only q.
         """
@@ -87,16 +90,12 @@ class CLModel(nn.Module):
 
 
 if __name__ == '__main__':
-    # model = CLModel().cuda()
-    # summary(model, input_size=[(32, 1, 160*1000), (32, 1, 64, 1000)])
-
     model = CLModel(
         cfg={
             'sr': 32000,
             'n_mels': 80,
             'win_sec': 0.2,
             'hop_sec': 0.1,
-            # 'freq_shift_size': 20
         },
         is_preprocess=True
     ).cuda()
