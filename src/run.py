@@ -1,6 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 import time
+import os
 
 import hydra
 
@@ -67,6 +68,10 @@ def train(cfg):
 
     """set training parameter"""
     device = torch.device(cfg['device'])
+    num_worker = train.cfg['num_worker']
+    if num_worker == -1:
+        num_worker = os.cpu_count()
+
     n_epoch = train_cfg['n_epoch']
     batch_size = train_cfg['batch_size']
     lr = train_cfg['lr']
@@ -80,6 +85,7 @@ def train(cfg):
 
     print("TRAINING PARAMETERS")
     print("device:", device)
+    print("num_worker:", num_worker)
     print("n_epoch:", n_epoch)
     print("batch_size:", batch_size)
     print("lr:", lr)
@@ -100,8 +106,10 @@ def train(cfg):
     else:
         dataset = AudioSetDataset(
             metadata_path=Path(metadata_path), sr=sr, crop_sec=crop_sec,)
+
+    pin_memory = False if num_worker == 0 else True
     dataloader = DataLoader(
-        dataset, batch_size=batch_size, shuffle=True, num_workers=0, pin_memory=False)
+        dataset, batch_size=batch_size, shuffle=True, num_workers=num_worker, pin_memory=pin_memory)
 
     """prepare models"""
     model = CLModel(cfg=preprocess_cfg, is_preprocess=True).to(device)
@@ -137,12 +145,11 @@ def train(cfg):
 
         loss_epoch = 0
 
+        data_iter = iter(dataloader)
         for step in range(len(dataloader)):
             s_time = time.time()
 
-            data_iter = iter(dataloader)
             q = next(data_iter)
-
             q = q.to(device)
             z_i, z_j = model(q)
 
