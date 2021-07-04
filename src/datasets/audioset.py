@@ -8,7 +8,7 @@ import soundfile as sf
 from torch.utils.data import Dataset
 import h5py
 
-from datasets.utils import random_crop, mel_spec
+from datasets.utils import random_crop
 
 
 class DataType(Enum):
@@ -27,9 +27,10 @@ class HDF5Dataset(Dataset):
         |-- eval.h5
         |-- balanced_train.h5
         |-- unbalanced_train_part00.h5
+        |-- ...
     """
 
-    def __init__(self, hdf5_dir: str, crop_sec: int = None, is_training=True):
+    def __init__(self, hdf5_dir: str, crop_sec: int = None, is_training=True) -> None:
         self.is_training = is_training
 
         self.crop_size = int(32000*crop_sec) if crop_sec is not None else None
@@ -54,27 +55,29 @@ class HDF5Dataset(Dataset):
                 self.data_pathes += [path for _ in range(data_len)]
                 self.data_idxes += [i for i in range(data_len)]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.data_len
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> np.ndarray:
         p = self.data_pathes[idx]
 
         with h5py.File(p, 'r') as hf:
             waveform = hf['waveform'][self.data_idxes[idx]]
-            # target = hf['waveform'][self.data_idxes[idx]]
+            # target = hf['targets'][self.data_idxes[idx]]
 
         if self.crop_size is not None:
             waveform, _ = random_crop(waveform, self.crop_size)
 
         waveform = waveform.reshape((1, -1))
 
-        # return np.float32(waveform)
         return waveform
 
 
 class AudioSetDataset(Dataset):
-    def __init__(self, metadata_path: Path, sr: int = 32000, crop_sec: int = None):
+    def __init__(self, metadata_path: Path, sr: int = 32000, crop_sec: int = None) -> None:
+        if not metadata_path.exists():
+            raise RuntimeError(f'{metadata_path} is not found.')
+
         meta_df = pd.read_csv(metadata_path, header=None)
 
         self.audio_pathes = meta_df[0].values.tolist()
@@ -84,10 +87,10 @@ class AudioSetDataset(Dataset):
         else:
             self.crop_size = crop_sec * sr
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.audio_pathes)
 
-    def __getitem__(self, idx: int):
+    def __getitem__(self, idx: int) -> np.ndarray:
         audio_path = self.audio_pathes[idx]
 
         wave_data, _ = sf.read(audio_path)
