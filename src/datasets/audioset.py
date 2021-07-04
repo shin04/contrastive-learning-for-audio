@@ -5,6 +5,7 @@ from enum import Enum
 import numpy as np
 import pandas as pd
 import soundfile as sf
+import torch
 from torch.utils.data import Dataset
 import h5py
 
@@ -45,32 +46,41 @@ class HDF5Dataset(Dataset):
         ]
 
         self.data_len = 0
-        self.data_pathes = []
+        self.archives = []
+        # self.data_pathes = []
+        self.arc_idxes = []
         self.data_idxes = []
-        for path in hdf5_path_list:
-            with h5py.File(path, 'r') as hf:
-                audio_names = hf['audio_name']
-                data_len = len(audio_names)
-                self.data_len += data_len
-                self.data_pathes += [path for _ in range(data_len)]
-                self.data_idxes += [i for i in range(data_len)]
+        for c, path in enumerate(hdf5_path_list):
+            # with h5py.File(path, 'r') as hf:
+            hf = h5py.File(path, 'r')
+            self.archives.append(hf)
+            audio_names = hf['audio_name']
+            data_len = len(audio_names)
+            self.data_len += data_len
+            # self.data_pathes += [path for _ in range(data_len)]
+            self.arc_idxes += [c for _ in range(data_len)]
+            self.data_idxes += [i for i in range(data_len)]
 
     def __len__(self) -> int:
         return self.data_len
 
     def __getitem__(self, idx: int) -> np.ndarray:
-        p = self.data_pathes[idx]
+        # p = self.data_pathes[idx]
 
-        with h5py.File(p, 'r') as hf:
-            waveform = hf['waveform'][self.data_idxes[idx]]
-            # target = hf['targets'][self.data_idxes[idx]]
+        # with h5py.File(p, 'r') as hf:
+        #     waveform = hf['waveform'][self.data_idxes[idx]]
+        #     # target = hf['targets'][self.data_idxes[idx]]
+
+        arc_idx = self.arc_idxes[idx]
+        data_idx = self.data_idxes[idx]
+        waveform = self.archives[arc_idx]['waveform'][data_idx]
 
         if self.crop_size is not None:
             waveform, _ = random_crop(waveform, self.crop_size)
 
         waveform = waveform.reshape((1, -1))
 
-        return waveform
+        return torch.from_numpy(waveform).float()
 
 
 class AudioSetDataset(Dataset):
@@ -80,7 +90,7 @@ class AudioSetDataset(Dataset):
 
         meta_df = pd.read_csv(metadata_path, header=None)
 
-        self.audio_pathes = meta_df[0].values.tolist()
+        self.audio_pathes = meta_df[0].values.tolist()[:19567]
         self.sr = sr
         if crop_sec is None:
             self.crop_size = None

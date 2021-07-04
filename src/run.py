@@ -134,9 +134,9 @@ def train(cfg):
         loss_epoch = 0
 
         for step in range(len(dataloader)):
-            s_time = time.time()
+            data_iter = iter(dataloader)
+            q = next(data_iter)
 
-            q = next(iter(dataloader))
             q = q.to(device)
             z_i, z_j = model(q)
 
@@ -146,8 +146,6 @@ def train(cfg):
 
             loss.backward()
             optimizer.step()
-
-            process_time = time.time() - s_time
 
             if step % 100 == 0:
                 print(
