@@ -2,7 +2,7 @@ device: cuda
 
 path:
   audio: /ml/dataset/audioset/audio
-  hdf: /ml/dataset/hdf5
+  hdf: /ml/dataset/hdf5/waveform
   meta: /ml/meta/meta_train.csv
   model: /ml/models/contrastive_learning
   tensorboard: /ml/log/tensorboard
@@ -19,7 +19,7 @@ preprocess:
   freq_shift_size: 20
 
 training:
-  n_epoch: 1000
+  n_epoch: 100
   batch_size: 32
   lr: 0.001
   temperature: 0.1

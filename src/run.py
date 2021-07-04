@@ -1,5 +1,6 @@
 from datetime import datetime
 from pathlib import Path
+import time
 
 import hydra
 
@@ -96,7 +97,7 @@ def train(cfg):
     """prepare dataset"""
     if dataset_type == 'cldataset':
         dataset = CLDataset(
-            audio_path=audio_path, metadata_path=metadata_path,
+            metadata_path=metadata_path,
             q_type='raw', k_type='raw', crop_sec=crop_sec,
             n_mels=n_mels, freq_shift_size=freq_shift_size
         )
@@ -106,7 +107,7 @@ def train(cfg):
         dataset = AudioSetDataset(
             metadata_path=Path(metadata_path), sr=sr, crop_sec=crop_sec,)
     dataloader = DataLoader(
-        dataset, batch_size=batch_size, shuffle=True,  pin_memory=True)
+        dataset, batch_size=batch_size, shuffle=True, num_workers=0, pin_memory=False)
 
     """prepare models"""
     if preprocessing_in_model:
@@ -146,6 +147,8 @@ def train(cfg):
         loss_epoch = 0
 
         for step in range(len(dataloader)):
+            s_time = time.time()
+
             if preprocessing_in_model:
                 q = next(iter(dataloader))
                 q = q.to(device)
@@ -163,8 +166,10 @@ def train(cfg):
             loss.backward()
             optimizer.step()
 
+            process_time = time.time() - s_time
+
             if step % 100 == 0:
-                print(f"Step [{step}/{len(dataloader)}],  Loss: {loss.item()}")
+                print(f"Step [{step}/{len(dataloader)}], Loss: {loss.item()}, Time: {process_time}")
 
             writer.add_scalar("Loss/train_epoch", loss.item(), global_step)
 
@@ -194,7 +199,7 @@ def train(cfg):
             with open(result_path / 'best.pt', 'wb') as f:
                 torch.save(model.state_dict(), f)
 
-        lr_scheduler.step(epoch)
+        lr_scheduler.step()
 
     print(f'complete training: {result_path}')
     writer.close()

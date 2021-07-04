@@ -8,7 +8,7 @@ build:
 
 run:
 	docker run -it \
-		--env HDF5_USE_FILE_LOCKING='FALSE'
+		--env HDF5_USE_FILE_LOCKING='FALSE' \
 		--shm-size=4g \
 		--mount type=bind,source=$(MOUNT_PATH),target=/ml \
 		--mount type=bind,source=$(DATASET_PATH),target=/ml/dataset/audioset \

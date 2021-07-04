@@ -47,7 +47,6 @@ class HDF5Dataset(Dataset):
         self.data_pathes = []
         self.data_idxes = []
         for path in hdf5_path_list:
-            print(path)
             with h5py.File(path, 'r') as hf:
                 audio_names = hf['audio_name']
                 data_len = len(audio_names)
@@ -70,7 +69,8 @@ class HDF5Dataset(Dataset):
 
         waveform = waveform.reshape((1, -1))
 
-        return np.float32(waveform)
+        # return np.float32(waveform)
+        return waveform
 
 
 class AudioSetDataset(Dataset):
