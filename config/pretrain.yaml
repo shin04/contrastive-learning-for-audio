@@ -1,4 +1,5 @@
 device: cuda
+debug: False
 
 path:
   audio: /ml/dataset/audioset/audio
