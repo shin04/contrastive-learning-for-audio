@@ -39,16 +39,14 @@ def train(cfg):
     model_ckpt_path = Path(path_cfg['model']) / ts
     if not model_ckpt_path.exists():
         if train_cfg['ckpt'] != -1:
-            print('checkpoint file is not found')
-            return
+            raise RuntimeError('checkpoint file is not found')
         model_ckpt_path.mkdir(parents=True)
 
     # tensorboard path
     log_path = Path(path_cfg['tensorboard']) / ts
     if not log_path.exists():
         if train_cfg['ckpt'] != -1:
-            print('tensorboard log file is not found')
-            return
+            raise RuntimeError('tensorboard log file is not found')
         log_path.mkdir(parents=True)
 
     # result path
