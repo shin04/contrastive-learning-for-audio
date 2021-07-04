@@ -68,7 +68,7 @@ def train(cfg):
 
     """set training parameter"""
     device = torch.device(cfg['device'])
-    num_worker = train.cfg['num_worker']
+    num_worker = train_cfg['num_worker']
     if num_worker == -1:
         num_worker = os.cpu_count()
 
@@ -150,6 +150,7 @@ def train(cfg):
             s_time = time.time()
 
             q = next(data_iter)
+            # q = q.to(device, non_blocking=True)
             q = q.to(device)
             z_i, z_j = model(q)
 
@@ -162,9 +163,9 @@ def train(cfg):
 
             process_time = time.time() - s_time
 
-            if step % 100 == 0:
-                print(
-                    f"Step [{step}/{len(dataloader)}], Loss: {loss.item()}, Time: {process_time}")
+            # if step % 100 == 0:
+            print(
+                f"Step [{step}/{len(dataloader)}], Loss: {loss.item()}, Time: {process_time}")
 
             if not debug:
                 writer.add_scalar("Loss/train_epoch", loss.item(), global_step)
