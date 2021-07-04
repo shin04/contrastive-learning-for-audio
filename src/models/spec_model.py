@@ -6,7 +6,7 @@ from torchinfo import summary
 
 
 class ConvBlock(nn.Module):
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels: int, out_channels: int) -> torch.Tensor:
         super(ConvBlock, self).__init__()
 
         self.conv = nn.Conv1d(
@@ -19,7 +19,7 @@ class ConvBlock(nn.Module):
         )
         self.batch_norm = nn.BatchNorm2d(out_channels)
 
-    def forward(self, input):
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
         x = self.conv(input)
         x = self.batch_norm(x)
         x = F.relu(x)
@@ -29,7 +29,7 @@ class ConvBlock(nn.Module):
 
 
 class CNN6(nn.Module):
-    def __init__(self, is_training=True):
+    def __init__(self, is_training: bool = True) -> None:
         super(CNN6, self).__init__()
 
         self.is_training = is_training
@@ -39,7 +39,7 @@ class CNN6(nn.Module):
         self.conv3 = ConvBlock(in_channels=128, out_channels=256)
         self.conv4 = ConvBlock(in_channels=256, out_channels=512)
 
-    def forward(self, input):
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
         x = self.conv1(input)
         x = F.dropout(x, p=0.2, training=self.is_training)
 
