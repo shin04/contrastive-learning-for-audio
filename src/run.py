@@ -35,8 +35,8 @@ def run(cfg):
         ts = datetime.now().strftime(TIME_TEMPLATE)
     else:
         ts = str(train_cfg['ckpt'])
-    print(f"TIMESTAMP: {ts}")
-    print(f"DEBUG MODE: ", debug)
+    print("TIMESTAMP: ", ts)
+    print("DEBUG MODE: ", debug)
 
     # checkpoint path
     model_ckpt_path = Path(path_cfg['model']) / ts
@@ -210,4 +210,4 @@ def run(cfg):
 
 
 if __name__ == '__main__':
-    train()
+    run()
