@@ -33,15 +33,15 @@ def train(trainloader, optimizer, device, global_step,  model, criterion, fold, 
 
         outputs = model(t_data)
 
-        optimizer.zero_grad()
-
         loss = criterion(outputs, labels)
+
         loss.backward()
         optimizer.step()
         train_loss += loss.item()
 
         _, predict = torch.max(outputs.data, 1)
         total += labels.size(0)
+
         correct = (predict == labels).sum()
         train_acc += correct.item()
 
