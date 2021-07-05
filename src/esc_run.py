@@ -13,9 +13,8 @@ from torch.utils.tensorboard import SummaryWriter
 
 from datasets.esc_dataset import ESCDataset
 from models.esc_mlp import ESC_Model
-from models.cl_model import CLModel
 from models.raw_model import Conv160
-# from models.spec_model import CNN6
+from models.spec_model import CNN6
 
 TIME_TEMPLATE = '%Y%m%d%H%M%S'
 
@@ -146,6 +145,10 @@ def run(cfg):
 
     """set parameters"""
     device = torch.device(cfg['device'])
+
+    use_pretrained = train_cfg['pretrained']
+    data_format = train_cfg['data_format']
+
     num_worker = train_cfg['num_worker']
     if num_worker == -1:
         num_worker = os.cpu_count()
@@ -161,6 +164,8 @@ def run(cfg):
 
     print('PARAMETERS')
     print("device:", device)
+    print("use_pretrained:", use_pretrained)
+    print("data_format:", data_format)
     print("num_worker:", num_worker)
     print("n_epoch:", n_epoch)
     print("batch_size:", batch_size)
@@ -228,28 +233,26 @@ def run(cfg):
             testset, batch_size=batch_size, shuffle=False, num_workers=num_worker, pin_memory=True)
 
         """prepare model"""
-        cl_model = CLModel(cfg=preprocess_cfg, is_preprocess=True).to(device)
-        cl_model.load_state_dict(torch.load(pretrain_model_path))
-        state_dict_keys = list(cl_model.state_dict().keys())
+        if data_format == 'raw':
+            base_model = Conv160().to(device)
+        elif data_format == 'spec':
+            base_model = CNN6().to(device)
+        else:
+            raise ValueError(f'unexpected parameter data_format="{data_format}"')
 
-        raw_model_dict = {}
-        spec_model_dict = {}
-        for k in state_dict_keys:
-            _k = k.split('.')
-            if 'raw_model' == _k[0]:
-                raw_model_dict[".".join(_k[1:])] = cl_model.state_dict()[k]
-            elif 'spec_model' == _k[0]:
-                spec_model_dict[".".join(_k[1:])] = cl_model.state_dict()[k]
+        if use_pretrained:
+            pretrain_state_dict = (torch.load(pretrain_model_path))
+            state_dict_keys = list(pretrain_state_dict.keys())
 
-        raw_model = Conv160().to(device)
-        raw_model.load_state_dict(raw_model_dict)
+            pretrained_model_state_dict = {}
+            for k in state_dict_keys:
+                _k = k.split('.')
+                if data_format in _k:
+                    pretrained_model_state_dict[".".join(_k[1:])] = pretrain_state_dict[k]
 
-        model = ESC_Model(raw_model, 512*600, 512, 50).to(device)
+            base_model.load_state_dict(pretrain_state_dict)
 
-        # spec_model = CNN6()
-        # spec_model.load_state_dict(spec_model_dict)
-
-        # model = ESC_Model(spec_model, 32, 2048, 512, 50).cuda()
+        model = ESC_Model(base_model, 512*600, 512, 50).to(device)
 
         """prepare optimizer and loss function"""
         optimizer = optim.Adam(model.parameters(), lr=lr)

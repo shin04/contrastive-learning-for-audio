@@ -4,13 +4,8 @@ import torch.nn.functional as F
 
 from torchinfo import summary
 
-from models.cl_model import CLModel
 from models.raw_model import Conv160
 from models.spec_model import CNN6
-
-# from cl_model import CLModel
-# from raw_model import Conv160
-# from spec_model import CNN6
 
 
 class ESC_Model(nn.Module):
@@ -47,28 +42,24 @@ class ESC_Model(nn.Module):
 
 
 if __name__ == '__main__':
-    cl_model = CLModel()
-    cl_model.load_state_dict(torch.load(
-        '../../results/20210610112655/best.pt'))
-    state_dict_keys = list(cl_model.state_dict().keys())
+    state_dict = torch.load('/ml/results/20210704200524/best.pt')
+    state_dict_keys = list(state_dict.keys())
 
     raw_model_dict = {}
     spec_model_dict = {}
     for k in state_dict_keys:
         _k = k.split('.')
         if 'raw_model' == _k[0]:
-            raw_model_dict[".".join(_k[1:])] = cl_model.state_dict()[k]
+            raw_model_dict[".".join(_k[1:])] = state_dict[k]
         elif 'spec_model' == _k[0]:
-            spec_model_dict[".".join(_k[1:])] = cl_model.state_dict()[k]
+            spec_model_dict[".".join(_k[1:])] = state_dict[k]
 
-    raw_model = Conv160().cuda()
+    raw_model = Conv160().cpu()
     raw_model.load_state_dict(raw_model_dict)
-
-    model = ESC_Model(raw_model, 512*1000, 512, 50).cuda()
+    model = ESC_Model(raw_model, 512*1000, 512, 50).cpu()
     summary(model, input_size=(32, 1, 160*1000))
 
-    spec_model = CNN6()
+    spec_model = CNN6().cpu()
     spec_model.load_state_dict(spec_model_dict)
-
-    model = ESC_Model(spec_model, 2048, 512, 50).cuda()
+    model = ESC_Model(spec_model, 2048, 512, 50).cpu()
     summary(model, input_size=(32, 1, 64, 1000))
