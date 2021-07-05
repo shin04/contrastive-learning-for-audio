@@ -1,7 +1,6 @@
 from datetime import datetime
 from pathlib import Path
 import os
-import time
 
 import hydra
 
@@ -15,105 +14,10 @@ from datasets.esc_dataset import ESCDataset
 from models.esc_mlp import ESC_Model
 from models.raw_model import Conv160
 from models.spec_model import CNN6
+from esc.training import train, valid
+from esc.prediction import prediction
 
 TIME_TEMPLATE = '%Y%m%d%H%M%S'
-
-
-def train(trainloader, optimizer, device, global_step,  model, criterion, fold, writer=None):
-    model.train()
-
-    n_batch = len(trainloader)
-    train_loss = 0
-    train_acc = 0
-    total = 0
-    for batch_num, (t_data, labels) in enumerate(trainloader):
-        s_time = time.time()
-
-        optimizer.zero_grad()
-        t_data = t_data.to(device)
-        labels = labels.to(device)
-
-        outputs = model(t_data)
-
-        loss = criterion(outputs, labels)
-
-        loss.backward()
-        optimizer.step()
-        train_loss += loss.item()
-
-        _, predict = torch.max(outputs.data, 1)
-        total += labels.size(0)
-
-        correct = (predict == labels).sum()
-        train_acc += correct.item()
-
-        if writer is not None:
-            writer.add_scalar(f"{fold}/loss", loss.item(), global_step)
-            writer.add_scalar(f"{fold}/acc", correct.item() /
-                              labels.size(0), global_step)
-        print(
-            f'batch: {batch_num}/{n_batch}, '
-            f'loss: {loss.item():.6f}, train loss: {train_loss/(batch_num+1):.6f}, '
-            f'acc: {correct.item()/labels.size(0):.6f}, train acc: {train_acc/total:.6f}, '
-            f'time: {time.time()-s_time:.5f}'
-        )
-        global_step += 1
-
-    train_loss /= n_batch
-    train_acc /= len(trainloader.dataset)
-
-    return global_step, train_loss, train_acc
-
-
-def valid(validloader, device, model, criterion):
-    model.eval()
-
-    valid_loss = 0
-    valid_acc = 0
-    total = 0
-
-    with torch.no_grad():
-        for i, (t_data, labels) in enumerate(validloader):
-            t_data = t_data.to(device)
-            labels = labels.to(device)
-
-            outputs = model(t_data)
-
-            loss = criterion(outputs, labels)
-            valid_loss += loss.item()
-
-            _, predict = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct = (predict == labels).sum()
-            valid_acc += correct.item()
-
-        valid_loss /= len(validloader)
-        valid_acc /= total
-
-    print(f'val loss: {valid_loss: .6f}, val acc: {valid_acc: .6f}')
-
-
-def test(testloader, device, model):
-    model.eval()
-
-    valid_acc = 0
-    total = 0
-
-    with torch.no_grad():
-        for i, (t_data, labels) in enumerate(testloader):
-            t_data = t_data.to(device)
-            labels = labels.to(device)
-
-            outputs = model(t_data)
-
-            _, predict = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct = (predict == labels).sum()
-            valid_acc += correct.item()
-
-        valid_acc /= total
-
-    print(f'test acc: {valid_acc: .6f}')
 
 
 @ hydra.main(config_path='/ml/config', config_name='esc')
@@ -202,6 +106,8 @@ def run(cfg):
     for i, fold_dict in enumerate(fold_dict_list):
         print(f'flod {i}: {fold_dict}')
 
+    preds_by_fold = []
+
     for k_fold, fold_dict in enumerate(fold_dict_list):
         print(f'===== fold: {k_fold}')
 
@@ -287,7 +193,9 @@ def run(cfg):
                 with open(weight_path, 'wb') as f:
                     torch.save(model.state_dict(), f)
 
-        test(testloader, device, model)
+        valid_acc, preds = prediction(testloader, device, model)
+        preds_by_fold.append(preds)
+        print(f'test acc: {valid_acc: .6f}')
 
     if not debug:
         writer.close()
