@@ -195,24 +195,24 @@ def run(cfg):
             audio_path=audio_path,
             metadata_path=meta_path,
             folds=fold_dict['train'],
-            data_type='raw',
-            data_crop_size=crop_sec
+            sr=sr,
+            crop_sec=crop_sec
         )
 
         validset = ESCDataset(
             audio_path=audio_path,
             metadata_path=meta_path,
             folds=fold_dict['valid'],
-            data_type='raw',
-            data_crop_size=crop_sec
+            sr=sr,
+            crop_sec=crop_sec
         )
 
         testset = ESCDataset(
             audio_path=audio_path,
             metadata_path=meta_path,
             folds=fold_dict['test'],
-            data_type='raw',
-            data_crop_size=crop_sec
+            sr=sr,
+            crop_sec=crop_sec
         )
 
         trainloader = DataLoader(
@@ -239,7 +239,7 @@ def run(cfg):
         raw_model = Conv160().to(device)
         raw_model.load_state_dict(raw_model_dict)
 
-        model = ESC_Model(raw_model, 422912, 512, 50).to(device)
+        model = ESC_Model(raw_model, 512*600, 512, 50).to(device)
 
         # spec_model = CNN6()
         # spec_model.load_state_dict(spec_model_dict)

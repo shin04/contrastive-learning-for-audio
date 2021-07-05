@@ -20,11 +20,9 @@ class ESCDataset(Dataset):
     def __init__(
         self, audio_path: str, metadata_path: str,
         folds: int = None,
-        data_type: DataType = 'raw',
-        data_crop_size=3,
-        n_mels: int = 80,
-        freq_shift_size: int = None
-    ):
+        sr: int = 32000,
+        crop_sec: int = None
+    ) -> None:
         self.audio_path = Path(audio_path)
 
         df = pd.read_csv(Path(metadata_path))
@@ -43,10 +41,11 @@ class ESCDataset(Dataset):
             else:
                 continue
 
-        self.data_type = data_type
-        self.data_crop_size = data_crop_size
-        self.n_mels = n_mels
-        self.freq_shift_size = freq_shift_size
+        self.sr = sr
+        if crop_sec is None:
+            self.crop_size = None
+        else:
+            self.crop_size = crop_sec * sr
 
     def __len__(self):
         return len(self.audio_names)
@@ -54,21 +53,14 @@ class ESCDataset(Dataset):
     def __getitem__(self, idx):
         data_path = self.audio_names[idx]
 
-        wave_data, sr = sf.read(data_path)
+        wave_data, _ = sf.read(data_path)
 
-        crop_size = self.data_crop_size * sr
-        crop_data, _ = random_crop(wave_data, crop_size)
+        if self.crop_size is not None:
+            wave_data, _ = random_crop(wave_data, self.crop_size)
 
-        if self.data_type == 'spectrogram':
-            win_size = int(0.2*sr)
-            hop_len = int(0.1*sr)
-            mel = mel_spec(
-                crop_data, sr, win_size, hop_len, self.n_mels, self.freq_shift_size)
-            data = mel[np.newaxis, :, :]
-        else:
-            data = crop_data.reshape((1, -1))
+        wave_data = wave_data.reshape((1, -1))
 
-        return np.float32(data), self.labels[idx]
+        return np.float32(wave_data), self.labels[idx]
 
 
 if __name__ == '__main__':
@@ -76,7 +68,8 @@ if __name__ == '__main__':
         audio_path='/ml/dataset/esc/audio',
         metadata_path='/ml/dataset/esc/meta/esc50.csv',
         folds=[1],
-        freq_shift_size=20
+        sr=32000,
+        crop_sec=3
     )
 
     print(len(dataset))
