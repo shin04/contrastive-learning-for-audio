@@ -1,18 +1,24 @@
 device: cuda
+debug: False
 
 path:
   audio: /ml/dataset/esc/audio
   meta: /ml/dataset/esc/meta/esc50.csv
-  pretrain_model: /ml/results/20210619062615/best.pt
+  pretrain_model: /ml/results/20210704200524/best.pt
   tensorboard: /ml/log/esc/tensorboard
   result: /ml/results
 
 preprocess:
-  audio_crop_size: 3
+  sr: 32000
+  crop_sec: 3 # [s]
+  win_sec: 0.2 # [s]
+  hop_sec: 0.1 # [s]
   n_mels: 80
   freq_shift_size: 20
 
 training:
+  num_worker: -1 # if -1, use os.cpu_count()
+  ckpt: -1
   n_epoch: 100
   batch_size: 32
   lr: 0.001

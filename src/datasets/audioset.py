@@ -102,7 +102,7 @@ class AudioSetDataset(Dataset):
 
         wave_data = wave_data.reshape((1, -1))
 
-        return np.float32(wave_data)
+        return torch.from_numpy(wave_data).float()
 
 
 if __name__ == '__main__':
