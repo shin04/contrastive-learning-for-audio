@@ -19,7 +19,7 @@ TIME_TEMPLATE = '%Y%m%d%H%M%S'
 
 
 @ hydra.main(config_path='../config', config_name='pretrain')
-def train(cfg):
+def run(cfg):
     """set config"""
     debug = cfg['debug']
     path_cfg = cfg['path']

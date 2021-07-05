@@ -1,6 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 import os
+import time
 
 import hydra
 
@@ -27,6 +28,8 @@ def train(trainloader, optimizer, device, global_step,  model, criterion, fold, 
     train_acc = 0
     total = 0
     for batch_num, (t_data, labels) in enumerate(trainloader):
+        s_time = time.time()
+
         optimizer.zero_grad()
         t_data = t_data.to(device)
         labels = labels.to(device)
@@ -51,8 +54,10 @@ def train(trainloader, optimizer, device, global_step,  model, criterion, fold, 
                               labels.size(0), global_step)
         print(
             f'batch: {batch_num}/{n_batch}, '
-            f'loss: {loss.item(): .6f}, train loss: {train_loss/(batch_num+1): .6f}, '
-            f'acc: {correct.item()/labels.size(0): .6f}, train acc: {train_acc/total: .6f} ')
+            f'loss: {loss.item():.6f}, train loss: {train_loss/(batch_num+1):.6f}, '
+            f'acc: {correct.item()/labels.size(0):.6f}, train acc: {train_acc/total:.6f}, '
+            f'time: {time.time()-s_time:.5f}'
+        )
         global_step += 1
 
     train_loss /= n_batch

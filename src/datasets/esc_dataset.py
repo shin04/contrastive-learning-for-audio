@@ -1,9 +1,9 @@
 from pathlib import Path
 from enum import Enum
 
-import numpy as np
 import pandas as pd
 import soundfile as sf
+import torch
 from torch.utils.data import Dataset
 
 from .utils import random_crop, mel_spec
@@ -60,7 +60,7 @@ class ESCDataset(Dataset):
 
         wave_data = wave_data.reshape((1, -1))
 
-        return np.float32(wave_data), self.labels[idx]
+        return torch.from_numpy(wave_data).float(), self.labels[idx]
 
 
 if __name__ == '__main__':
