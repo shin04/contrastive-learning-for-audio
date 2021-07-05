@@ -137,11 +137,16 @@ def run(cfg):
     if (not debug) and (not log_path.exists()):
         log_path.mkdir(parents=True)
 
+    result_path = Path(path_cfg['result']) / ts
+    if (not debug) and (not result_path.exists()):
+        result_path.mkdir(parents=True)
+
     print('PATH')
     print('audio:', audio_path)
     print('meta:', meta_path)
     if not debug:
         print(f'tensorboard: {log_path}')
+        print(f'result: {result_path}')
 
     """set parameters"""
     device = torch.device(cfg['device'])
@@ -199,6 +204,10 @@ def run(cfg):
 
     for k_fold, fold_dict in enumerate(fold_dict_list):
         print(f'===== fold: {k_fold}')
+
+        # path to save weight
+        if not debug:
+            weight_path = result_path / f'fold{k_fold}-best.pt'
 
         """prepare dataset"""
         trainset = ESCDataset(
@@ -259,6 +268,7 @@ def run(cfg):
         criterion = nn.CrossEntropyLoss()
 
         """training and test"""
+        best_loss = 10000
         train_global_step = 0
         for epoch in range(n_epoch):
             train_global_step, train_loss, train_acc = train(
@@ -271,6 +281,12 @@ def run(cfg):
 
             print(
                 f'epoch: {epoch}/{n_epoch}, train loss: {train_loss: .6f}, train acc: {train_acc: .6f}')
+
+            if (not debug) and (best_loss > train_loss):
+                best_loss = train_loss
+                with open(weight_path, 'wb') as f:
+                    torch.save(model.state_dict(), f)
+
         test(testloader, device, model)
 
     if not debug:
