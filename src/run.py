@@ -114,8 +114,9 @@ def train(cfg):
     """prepare models"""
     model = CLModel(cfg=preprocess_cfg, is_preprocess=True).to(device)
 
-    optimizer = optim.Adam(model.parameters(), lr=lr, amsgrad=False)
-    lr_scheduler_func = CosineDecayScheduler(base_lr=1, max_epoch=n_epoch)
+    optimizer = optim.Adam(model.parameters(), lr=1, amsgrad=False)
+    lr_scheduler_func = CosineDecayScheduler(
+        max_epochs=n_epoch, warmup_lr_limit=lr)
     lr_scheduler = torch.optim.lr_scheduler.LambdaLR(
         optimizer, lr_lambda=lr_scheduler_func)
 
