@@ -104,7 +104,7 @@ def run(cfg):
     for i, fold_dict in enumerate(fold_dict_list):
         print(f'flod {i}: {fold_dict}')
 
-    predictions = np.zeros()
+    predictions = np.array([])
 
     for k_fold, fold_dict in enumerate(fold_dict_list):
         print(f'===== fold: {k_fold}')

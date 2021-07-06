@@ -51,8 +51,9 @@ class ESCDataset(Dataset):
         return len(self.audio_names)
 
     def __getitem__(self, idx):
-        data_path = self.audio_names[idx]
+        # return torch.from_numpy(self.data[idx]).float(), self.labels[idx]
 
+        data_path = self.audio_names[idx]
         wave_data, _ = sf.read(data_path)
 
         if self.crop_size is not None:

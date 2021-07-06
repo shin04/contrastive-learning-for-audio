@@ -22,6 +22,6 @@ training:
   num_worker: -1 # if -1, use os.cpu_count()
   ckpt: -1
   n_epoch: 30
-  batch_size: 16
+  batch_size: 32
   lr: 0.001
   temperature: 0.1

@@ -13,7 +13,7 @@ def model_setup(
     pretrain_model_path: Path = None
 ) -> nn.Module:
 
-    if use_pretrained and (pretrain_model_path is not None):
+    if use_pretrained and (pretrain_model_path is None):
         raise ValueError('pretrain_model_path is None')
 
     if data_format == 'raw':
