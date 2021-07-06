@@ -1,7 +1,20 @@
+from pathlib import Path
+from typing import Union
+
+import numpy as np
 import torch
+from torch.data.utils import DataLoader
+
+from esc.model_setup import model_setup
 
 
-def prediction(testloader, device, model):
+def prediction(
+    testloader: DataLoader, device: torch.device,
+    data_format: str, weight_path: Path
+) -> Union[float, np.ndarray]:
+
+    model = model_setup(data_format, False, None).to(device)
+    model.load_state_dict(torch.load(weight_path))
     model.eval()
 
     test_corr = 0
@@ -25,4 +38,4 @@ def prediction(testloader, device, model):
 
         valid_acc = test_corr / total
 
-    return valid_acc, preds
+    return valid_acc, np.array(preds)

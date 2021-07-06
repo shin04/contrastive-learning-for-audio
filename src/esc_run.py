@@ -177,7 +177,8 @@ def run(cfg):
                 with open(weight_path, 'wb') as f:
                     torch.save(model.state_dict(), f)
 
-        valid_acc, preds = prediction(testloader, device, model)
+        valid_acc, preds = prediction(
+            testloader, device, data_format, weight_path)
         preds_by_fold.append(preds)
         print(f'test acc: {valid_acc: .6f}')
 
