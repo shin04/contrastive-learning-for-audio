@@ -12,7 +12,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from datasets.esc_dataset import ESCDataset
 from esc.training import train, valid
-from esc.prediction import prediction
+from esc import prediction
 from esc.model_setup import model_setup
 
 TIME_TEMPLATE = '%Y%m%d%H%M%S'
@@ -104,7 +104,7 @@ def run(cfg):
     for i, fold_dict in enumerate(fold_dict_list):
         print(f'flod {i}: {fold_dict}')
 
-    preds_by_fold = []
+    predictions = np.zeros()
 
     for k_fold, fold_dict in enumerate(fold_dict_list):
         print(f'===== fold: {k_fold}')
@@ -189,15 +189,16 @@ def run(cfg):
                 with open(weight_path, 'wb') as f:
                     torch.save(model.state_dict(), f)
 
-        pred_acc, preds = prediction(
+        fold_preds = prediction.predict(
             testloader, device, data_format, weight_path)
-        preds_by_fold.append(preds)
-        print(f'test acc: {pred_acc: .6f}')
+        predictions = np.concatenate([predictions, fold_preds])
 
     if not debug:
         writer.close()
 
-    np.save(result_path / 'preds', np.array(preds_by_fold))
+    acc = prediction.calc_accuracy(meta_path, predictions)
+    np.save(result_path / 'preds', np.array(predictions))
+    print(f'test accuracy: {acc}')
     print('complete!!')
 
 

@@ -1,25 +1,23 @@
 from pathlib import Path
-from typing import Union
 
 import numpy as np
+import pandas as pd
 import torch
-from torch.data.utils import DataLoader
+from torch.utils.data import DataLoader
+from sklearn.metrics import accuracy_score
 
 from esc.model_setup import model_setup
 
 
-def prediction(
+def predict(
     testloader: DataLoader, device: torch.device,
     data_format: str, weight_path: Path
-) -> Union[float, np.ndarray]:
+) -> np.ndarray:
 
     model = model_setup(data_format, False, None).to(device)
     model.load_state_dict(torch.load(weight_path))
     model.eval()
 
-    pred_corr = 0
-    pred_acc = 0
-    total = 0
     preds = []
 
     with torch.no_grad():
@@ -32,10 +30,11 @@ def prediction(
             _, predict = torch.max(outputs.data, 1)
             preds += list(predict.to('cpu').detach().numpy().copy())
 
-            total += labels.size(0)
-            correct = (predict == labels).sum()
-            pred_corr += correct.item()
+    return np.array(preds)
 
-        pred_acc = pred_corr / total
 
-    return pred_acc, np.array(preds)
+def calc_accuracy(meta_path: Path, predictions: np.array) -> float:
+    labels = pd.read_csv(meta_path)['target'].values()
+    acc = accuracy_score(labels, predictions)
+
+    return acc
