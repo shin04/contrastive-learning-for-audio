@@ -32,8 +32,8 @@ def train(trainloader, optimizer, device, global_step,  model, criterion, fold, 
         train_acc += correct.item()
 
         if writer is not None:
-            writer.add_scalar(f"{fold}/loss", loss.item(), global_step)
-            writer.add_scalar(f"{fold}/acc", correct.item() /
+            writer.add_scalar(f"fold: {fold}, loss", loss.item(), global_step)
+            writer.add_scalar(f"fold: {fold}, acc", correct.item() /
                               labels.size(0), global_step)
         print(
             f'batch: {batch_num}/{n_batch}, '
@@ -74,4 +74,4 @@ def valid(validloader, device, model, criterion):
         valid_loss /= len(validloader)
         valid_acc /= total
 
-    print(f'val loss: {valid_loss: .6f}, val acc: {valid_acc: .6f}')
+    return valid_loss, valid_acc

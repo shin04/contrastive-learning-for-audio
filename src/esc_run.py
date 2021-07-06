@@ -163,14 +163,29 @@ def run(cfg):
         for epoch in range(n_epoch):
             train_global_step, train_loss, train_acc = train(
                 trainloader, optimizer, device, train_global_step, model, criterion, k_fold, writer)
-            valid(validloader, device, model, criterion)
+            valid_loss, valid_acc = valid(
+                validloader, device, model, criterion)
 
             if not debug:
-                writer.add_scalar(f"{k_fold}/loss/epoch", train_loss, epoch)
-                writer.add_scalar(f"{k_fold}/acc/epoch", train_acc, epoch)
+                writer.add_scalar(
+                    f"fold: {k_fold}, epoch: {epoch}, train loss", train_loss, epoch)
+                writer.add_scalar(
+                    f"fold: {k_fold}, epoch: {epoch}, train acc", train_acc, epoch)
+                writer.add_scalar(
+                    f"fold: {k_fold}, epoch: {epoch}, valid loss", valid_loss, epoch)
+                writer.add_scalar(
+                    f"fold: {k_fold}, epoch: {epoch}, valid acc", valid_acc, epoch)
 
             print(
-                f'epoch: {epoch}/{n_epoch}, train loss: {train_loss: .6f}, train acc: {train_acc: .6f}')
+                f'epoch: {epoch}/{n_epoch}, '
+                f'train loss: {train_loss: .6f}, '
+                f'train acc: {train_acc: .6f}'
+            )
+            print(
+                f'epoch: {epoch}/{n_epoch}, '
+                f'valid loss: {valid_loss: .6f}, '
+                f'valid acc: {valid_acc: .6f}'
+            )
 
             if (not debug) and (best_loss > train_loss):
                 best_loss = train_loss
