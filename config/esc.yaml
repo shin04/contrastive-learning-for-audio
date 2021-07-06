@@ -6,7 +6,7 @@ path:
   meta: /ml/dataset/esc/meta/esc50.csv
   pretrain_model: /ml/results/20210704200524/best.pt
   tensorboard: /ml/log/esc/tensorboard
-  result: /ml/results
+  result: /ml/results/esc
 
 preprocess:
   sr: 32000
@@ -17,9 +17,11 @@ preprocess:
   freq_shift_size: 20
 
 training:
+  pretrained: True # if False, not use pretrained weight
+  data_format: "raw" # raw or spec
   num_worker: -1 # if -1, use os.cpu_count()
   ckpt: -1
-  n_epoch: 100
+  n_epoch: 30
   batch_size: 32
   lr: 0.001
   temperature: 0.1
