@@ -30,6 +30,7 @@ class ESC_Model(nn.Module):
 
     def forward(self, input):
         x = self.base_model(input)
+        x = F.dropout(x, p=0.2, training=self.training)
         x = self.flatten(x)
 
         x = self.hidden_layer(x)

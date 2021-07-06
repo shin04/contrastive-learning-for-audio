@@ -14,7 +14,7 @@ def predict(
     data_format: str, weight_path: Path
 ) -> np.ndarray:
 
-    model = model_setup(data_format, False, None).to(device)
+    model = model_setup(data_format, False, None, False).to(device)
     model.load_state_dict(torch.load(weight_path))
     model.eval()
 
@@ -34,7 +34,7 @@ def predict(
 
 
 def calc_accuracy(meta_path: Path, predictions: np.array) -> float:
-    labels = pd.read_csv(meta_path)['target'].values()
+    labels = pd.read_csv(meta_path)['target'].values
     acc = accuracy_score(labels, predictions)
 
     return acc

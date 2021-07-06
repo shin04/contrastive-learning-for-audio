@@ -6,7 +6,7 @@ import soundfile as sf
 import torch
 from torch.utils.data import Dataset
 
-from .utils import random_crop, mel_spec
+from .utils import random_crop
 
 
 class DataType(Enum):
