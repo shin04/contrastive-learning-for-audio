@@ -26,17 +26,17 @@ class ESCDataset(Dataset):
         self.audio_path = Path(audio_path)
 
         df = pd.read_csv(Path(metadata_path))
-        self.audio_names = []
+        self.waveforms = []
         self.labels = []
         for i in range(len(df)):
             df_fold = df.loc[i]['fold']
             p = self.audio_path / df.loc[i]['filename']
+
             label = df.loc[i]['target']
-            if folds is None:
-                self.audio_names.append(p)
-                self.labels.append(label)
-            elif df_fold in folds:
-                self.audio_names.append(p)
+
+            if (folds is None) or (df_fold in folds):
+                waveform, _ = sf.read(p)
+                self.waveforms.append(waveform)
                 self.labels.append(label)
             else:
                 continue
@@ -48,13 +48,10 @@ class ESCDataset(Dataset):
             self.crop_size = crop_sec * sr
 
     def __len__(self):
-        return len(self.audio_names)
+        return len(self.labels)
 
     def __getitem__(self, idx):
-        # return torch.from_numpy(self.data[idx]).float(), self.labels[idx]
-
-        data_path = self.audio_names[idx]
-        wave_data, _ = sf.read(data_path)
+        wave_data = self.waveforms[idx]
 
         if self.crop_size is not None:
             wave_data, _ = random_crop(wave_data, self.crop_size)

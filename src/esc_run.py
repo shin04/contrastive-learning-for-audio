@@ -141,7 +141,7 @@ def run(cfg):
         trainloader = DataLoader(
             trainset, batch_size=batch_size, shuffle=True, num_workers=num_worker, pin_memory=True)
         validloader = DataLoader(
-            validset, batch_size=batch_size, shuffle=True, num_workers=num_worker, pin_memory=True)
+            validset, batch_size=batch_size, shuffle=False, num_workers=num_worker, pin_memory=True)
         testloader = DataLoader(
             testset, batch_size=batch_size, shuffle=False, num_workers=num_worker, pin_memory=True)
 
