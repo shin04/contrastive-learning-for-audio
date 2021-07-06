@@ -17,8 +17,8 @@ def prediction(
     model.load_state_dict(torch.load(weight_path))
     model.eval()
 
-    test_corr = 0
-    valid_acc = 0
+    pred_corr = 0
+    pred_acc = 0
     total = 0
     preds = []
 
@@ -34,8 +34,8 @@ def prediction(
 
             total += labels.size(0)
             correct = (predict == labels).sum()
-            test_corr += correct.item()
+            pred_corr += correct.item()
 
-        valid_acc = test_corr / total
+        pred_acc = pred_corr / total
 
-    return valid_acc, np.array(preds)
+    return pred_acc, np.array(preds)

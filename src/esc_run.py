@@ -3,7 +3,7 @@ from pathlib import Path
 import os
 
 import hydra
-
+import numpy as np
 import torch
 from torch.utils.data import DataLoader
 import torch.optim as optim
@@ -11,9 +11,6 @@ import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 
 from datasets.esc_dataset import ESCDataset
-from models.esc_mlp import ESC_Model
-from models.raw_model import Conv160
-from models.spec_model import CNN6
 from esc.training import train, valid
 from esc.prediction import prediction
 from esc.model_setup import model_setup
@@ -192,13 +189,16 @@ def run(cfg):
                 with open(weight_path, 'wb') as f:
                     torch.save(model.state_dict(), f)
 
-        valid_acc, preds = prediction(
+        pred_acc, preds = prediction(
             testloader, device, data_format, weight_path)
         preds_by_fold.append(preds)
-        print(f'test acc: {valid_acc: .6f}')
+        print(f'test acc: {pred_acc: .6f}')
 
     if not debug:
         writer.close()
+
+    np.save(result_path / 'preds', np.array(preds_by_fold))
+    print('complete!!')
 
 
 if __name__ == '__main__':
