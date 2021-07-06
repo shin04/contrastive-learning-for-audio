@@ -16,6 +16,7 @@ from models.raw_model import Conv160
 from models.spec_model import CNN6
 from esc.training import train, valid
 from esc.prediction import prediction
+from esc.model_setup import model_setup
 
 TIME_TEMPLATE = '%Y%m%d%H%M%S'
 
@@ -148,26 +149,9 @@ def run(cfg):
             testset, batch_size=batch_size, shuffle=False, num_workers=num_worker, pin_memory=True)
 
         """prepare model"""
-        if data_format == 'raw':
-            base_model = Conv160().to(device)
-        elif data_format == 'spec':
-            base_model = CNN6().to(device)
-        else:
-            raise ValueError(f'unexpected parameter data_format="{data_format}"')
-
-        if use_pretrained:
-            pretrain_state_dict = (torch.load(pretrain_model_path))
-            state_dict_keys = list(pretrain_state_dict.keys())
-
-            pretrained_model_state_dict = {}
-            for k in state_dict_keys:
-                _k = k.split('.')
-                if data_format in _k:
-                    pretrained_model_state_dict[".".join(_k[1:])] = pretrain_state_dict[k]
-
-            base_model.load_state_dict(pretrain_state_dict)
-
-        model = ESC_Model(base_model, 512*600, 512, 50).to(device)
+        model = model_setup(
+            data_format, use_pretrained, pretrain_model_path
+        ).to(device)
 
         """prepare optimizer and loss function"""
         optimizer = optim.Adam(model.parameters(), lr=lr)

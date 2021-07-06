@@ -9,23 +9,24 @@ from models.spec_model import CNN6
 
 
 class ESC_Model(nn.Module):
-    def __init__(self, base_model, in_channels, hidden_dim, out_channels, is_training=True):
+    def __init__(
+        self, base_model, in_channels, hidden_dim, out_channels,
+        use_pretrained=True, is_training=True
+    ):
+
         super(ESC_Model, self).__init__()
 
         self.base_model = base_model
-        for param in self.base_model.parameters():
-            param.requires_grad = False
-
-        self.in_channels = in_channels
-        self.hidden_dim = hidden_dim
-        self.out_channels = out_channels
+        if use_pretrained:
+            for param in self.base_model.parameters():
+                param.requires_grad = False
 
         self.is_training = is_training
 
         self.flatten = nn.Flatten()
-        self.hidden_layer = nn.Linear(self.in_channels, self.hidden_dim)
-        self.norm = nn.BatchNorm1d(self.hidden_dim)
-        self.out_layer = nn.Linear(self.hidden_dim, self.out_channels)
+        self.hidden_layer = nn.Linear(in_channels, hidden_dim)
+        self.norm = nn.BatchNorm1d(hidden_dim)
+        self.out_layer = nn.Linear(hidden_dim, out_channels)
 
     def forward(self, input):
         x = self.base_model(input)
