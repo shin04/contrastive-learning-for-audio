@@ -164,14 +164,10 @@ def run(cfg):
                 validloader, device, model, criterion)
 
             if not debug:
-                writer.add_scalar(
-                    f"fold: {k_fold}, epoch: {epoch}, train loss", train_loss, epoch)
-                writer.add_scalar(
-                    f"fold: {k_fold}, epoch: {epoch}, train acc", train_acc, epoch)
-                writer.add_scalar(
-                    f"fold: {k_fold}, epoch: {epoch}, valid loss", valid_loss, epoch)
-                writer.add_scalar(
-                    f"fold: {k_fold}, epoch: {epoch}, valid acc", valid_acc, epoch)
+                writer.add_scalar(f"fold:{k_fold}/train-loss", train_loss, epoch)
+                writer.add_scalar(f"fold:{k_fold}/train-acc", train_acc, epoch)
+                writer.add_scalar(f"fold:{k_fold}/valid-loss", valid_loss, epoch)
+                writer.add_scalar(f"fold:{k_fold}/valid-acc", valid_acc, epoch)
 
             print(
                 f'epoch: {epoch}/{n_epoch}, '

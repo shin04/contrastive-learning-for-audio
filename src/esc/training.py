@@ -32,8 +32,8 @@ def train(trainloader, optimizer, device, global_step,  model, criterion, fold, 
         train_acc += correct.item()
 
         if writer is not None:
-            writer.add_scalar(f"fold: {fold}, loss", loss.item(), global_step)
-            writer.add_scalar(f"fold: {fold}, acc", correct.item() /
+            writer.add_scalar(f"fold:{fold}/loss", loss.item(), global_step)
+            writer.add_scalar(f"fold:{fold}/acc", correct.item() /
                               labels.size(0), global_step)
         print(
             f'batch: {batch_num}/{n_batch}, '
