@@ -39,11 +39,11 @@ def run(cfg):
     print("DEBUG MODE: ", debug)
 
     # checkpoint path
-    model_ckpt_path = Path(path_cfg['model']) / ts
-    if (not debug) and (not model_ckpt_path.exists()):
+    model_path = Path(path_cfg['model']) / ts
+    if (not debug) and (not model_path.exists()):
         if train_cfg['ckpt'] != -1:
             raise RuntimeError('checkpoint file is not found')
-        model_ckpt_path.mkdir(parents=True)
+        model_path.mkdir(parents=True)
 
     # tensorboard path
     log_path = Path(path_cfg['tensorboard']) / ts
@@ -52,18 +52,12 @@ def run(cfg):
             raise RuntimeError('tensorboard log file is not found')
         log_path.mkdir(parents=True)
 
-    # result path
-    result_path = Path(path_cfg['result']) / ts
-    if (not debug) and (not result_path.exists()):
-        result_path.mkdir(parents=True)
-
     print("PATH")
     print("audio path: ", audio_path)
     print("hdf path:", hdf_path)
     print("metadata:", metadata_path)
     if not debug:
-        print("checkpoint:", model_ckpt_path)
-        print("best model:", result_path)
+        print("model:", model_path)
         print("tensorboard:", log_path)
 
     """set training parameter"""
@@ -123,8 +117,8 @@ def run(cfg):
     """if exist pretrained model checkpoint, use it"""
     s_epoch = 0
     if not debug:
-        if len(list(model_ckpt_path.glob(r'model-epoch-*.ckpt'))) > 0:
-            ckpt_file = list(model_ckpt_path.glob(r'model-epoch-*.ckpt'))[0]
+        if len(list(model_path.glob(r'model-epoch-*.ckpt'))) > 0:
+            ckpt_file = list(model_path.glob(r'model-epoch-*.ckpt'))[0]
             checkpoint = torch.load(ckpt_file)
             print(f'use checkpoint at {ckpt_file}')
             print(f'epoch: {checkpoint["epoch"]}')
@@ -139,7 +133,8 @@ def run(cfg):
     model.train()
 
     """training"""
-    best_loss = 10000
+    best_loss_epoch = 10000
+    best_loss_step = 10000
     global_step = 0
     for epoch in range(s_epoch, n_epoch):
         print(f'epoch: {epoch}')
@@ -168,18 +163,24 @@ def run(cfg):
                 print(
                     f"Step [{step}/{len(dataloader)}], Loss: {loss.item()}, Time: {process_time}")
 
+                if best_loss_step > loss.item():
+                    best_loss_step = loss.item()
+                    with open(model_path / 'best-by-step.pt', 'wb') as f:
+                        torch.save(model.state_dict(), f)
+
             if not debug:
                 writer.add_scalar("Loss/train_epoch", loss.item(), global_step)
 
             loss_epoch += loss.item()
             global_step += 1
 
+        loss_epoch /= len(dataloader)
+
         print(
-            f"Epoch [{epoch}/{n_epoch}],  Loss: {loss_epoch / len(dataloader)},  lr: {lr_scheduler.get_last_lr()}")
+            f"Epoch [{epoch}/{n_epoch}],  Loss: {loss_epoch},  lr: {lr_scheduler.get_last_lr()}")
 
         if not debug:
-            writer.add_scalar("Loss/train", loss_epoch /
-                              len(dataloader), epoch)
+            writer.add_scalar("Loss/train", loss_epoch, epoch)
             writer.add_scalar("learning_rate", lr, epoch)
 
             torch.save({
@@ -188,22 +189,22 @@ def run(cfg):
                 'optimizer_state_dict': optimizer.state_dict(),
                 'scheduler_state_dict': lr_scheduler.state_dict(),
                 'loss': loss_epoch,
-            }, model_ckpt_path/f'model-epoch-{epoch}.ckpt')
-            old_ckpt = Path(model_ckpt_path/f'model-epoch-{epoch-1}.ckpt')
+            }, model_path/f'model-epoch-{epoch}.ckpt')
+            old_ckpt = Path(model_path/f'model-epoch-{epoch-1}.ckpt')
 
             # if prior check point exist, delete it
             if old_ckpt.exists():
                 old_ckpt.unlink()
 
-            if best_loss > loss_epoch:
-                best_loss = loss_epoch
-                with open(result_path / 'best.pt', 'wb') as f:
+            if best_loss_epoch > loss_epoch:
+                best_loss_epoch = loss_epoch
+                with open(model_path / 'best.pt', 'wb') as f:
                     torch.save(model.state_dict(), f)
 
         lr_scheduler.step()
 
     if not debug:
-        print(f'complete training: {result_path}')
+        print(f'complete training: {model_path}')
         writer.close()
     else:
         print('complete training')
