@@ -7,7 +7,6 @@ path:
   meta: /ml/meta/meta_train.csv
   model: /ml/models/contrastive_learning
   tensorboard: /ml/log/tensorboard
-  result: /ml/results
 
 preprocess:
   dataset_type: "hdf5" # raw or hdf5
@@ -24,4 +23,4 @@ training:
   batch_size: 32
   lr: 0.001
   temperature: 0.1
-  ckpt: -1
+  ckpt: -1 # if using checkpoint, set timestamp
