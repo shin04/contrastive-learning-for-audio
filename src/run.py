@@ -109,7 +109,9 @@ def run(cfg):
 
     pin_memory = False if num_worker == 0 else True
     dataloader = DataLoader(
-        dataset, batch_size=batch_size, shuffle=True, num_workers=num_worker, pin_memory=pin_memory)
+        dataset, batch_size=batch_size, shuffle=True,
+        num_workers=num_worker, pin_memory=pin_memory
+    )
 
     """prepare models"""
     model = CLModel(cfg=preprocess_cfg, is_preprocess=True).to(device)
@@ -148,11 +150,17 @@ def run(cfg):
 
         data_iter = iter(dataloader)
         for step in range(len(dataloader)):
+            torch.cuda.synchronize()
             s_time = time.time()
 
+            torch.cuda.synchronize()
+            load_time = time.perf_counter()
             q = next(data_iter)
-            # q = q.to(device, non_blocking=True)
-            q = q.to(device)
+            torch.cuda.synchronize()
+            print('data loading time:', time.perf_counter() - load_time)
+
+            q = q.to(device, non_blocking=True)
+            # q = q.to(device)
             z_i, z_j = model(q)
 
             loss = nt_xent_loss(z_i, z_j, temperature)
@@ -162,6 +170,7 @@ def run(cfg):
             loss.backward()
             optimizer.step()
 
+            torch.cuda.synchronize()
             process_time = time.time() - s_time
 
             if step % 100 == 0:

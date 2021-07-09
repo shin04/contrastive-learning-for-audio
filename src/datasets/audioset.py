@@ -1,6 +1,7 @@
 from __future__ import annotations
 from pathlib import Path
 from enum import Enum
+import time
 
 import numpy as np
 import pandas as pd
@@ -45,32 +46,37 @@ class HDF5Dataset(Dataset):
             p for p in hdf5_dir_path.glob('*.h5') if mode in str(p)
         ]
 
-        self.data_len = 0
-        self.archives = []
-        self.data_pathes = []
-        self.data_idxes = []
-        for c, path in enumerate(hdf5_path_list):
-            with h5py.File(path, 'r') as hf:
-                audio_names = hf['audio_name']
-                data_len = len(audio_names)
-                self.data_len += data_len
-                self.data_pathes += [path for _ in range(data_len)]
-                self.data_idxes += [i for i in range(data_len)]
+        # self.data_len = 0
+        # self.data_pathes = []
+        # self.data_idxes = []
+
+        init_time = time.perf_counter()
+        with h5py.File(hdf5_path_list[0]) as hf:
+            self.data = hf['waveform'][:]
+        # for c, path in enumerate(hdf5_path_list):
+        #     with h5py.File(path, 'r') as hf:
+        #         data_len = len(hf['audio_name'])
+        #         self.data_len += data_len
+        #         self.data_pathes += [path for _ in range(data_len)]
+        #         self.data_idxes += [i for i in range(data_len)]
+        print('data init time:', time.perf_counter() - init_time)
 
     def __len__(self) -> int:
-        return self.data_len
+        # return self.data_len
+        return len(self.data)
 
     def __getitem__(self, idx: int) -> np.ndarray:
-        p = self.data_pathes[idx]
+        # p = self.data_pathes[idx]
 
-        with h5py.File(p, 'r') as hf:
-            waveform = hf['waveform'][self.data_idxes[idx]]
-            # target = hf['targets'][self.data_idxes[idx]]
+        # with h5py.File(p, 'r') as hf:
+        #     waveform = hf['waveform'][self.data_idxes[idx]]
+        #     # target = hf['targets'][self.data_idxes[idx]]
 
-        if self.crop_size is not None:
-            waveform, _ = random_crop(waveform, self.crop_size)
+        # if self.crop_size is not None:
+        #     waveform, _ = random_crop(waveform, self.crop_size)
 
-        waveform = waveform.reshape((1, -1))
+        # waveform = waveform.reshape((1, -1))
+        waveform = self.data[idx].reshape((1, -1))
 
         return torch.from_numpy(waveform).float()
 
@@ -82,7 +88,7 @@ class AudioSetDataset(Dataset):
 
         meta_df = pd.read_csv(metadata_path, header=None)
 
-        self.audio_pathes = meta_df[0].values.tolist()[:19567]
+        self.audio_pathes = meta_df[0].values.tolist()
         self.sr = sr
         if crop_sec is None:
             self.crop_size = None
