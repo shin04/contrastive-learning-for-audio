@@ -151,7 +151,7 @@ def run(cfg):
         ).to(device)
 
         """prepare optimizer and loss function"""
-        optimizer = optim.Adam(model.parameters(), lr=lr)
+        optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=0.1)
         criterion = nn.CrossEntropyLoss()
 
         """training and test"""
@@ -164,9 +164,11 @@ def run(cfg):
                 validloader, device, model, criterion)
 
             if not debug:
-                writer.add_scalar(f"fold:{k_fold}/train-loss", train_loss, epoch)
+                writer.add_scalar(
+                    f"fold:{k_fold}/train-loss", train_loss, epoch)
                 writer.add_scalar(f"fold:{k_fold}/train-acc", train_acc, epoch)
-                writer.add_scalar(f"fold:{k_fold}/valid-loss", valid_loss, epoch)
+                writer.add_scalar(
+                    f"fold:{k_fold}/valid-loss", valid_loss, epoch)
                 writer.add_scalar(f"fold:{k_fold}/valid-acc", valid_acc, epoch)
 
             print(
