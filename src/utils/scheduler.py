@@ -26,10 +26,12 @@ class CosineDecayScheduler:
 
 
 if __name__ == '__main__':
-    scheduler = CosineDecayScheduler(100)
+    step_num = 30
+    scheduler = CosineDecayScheduler(step_num, 0.001)
 
-    x = [i for i in range(100)]
+    x = [i for i in range(step_num)]
     y = []
     for i in x:
         y.append(scheduler(i))
-    print(f'{y[-1]:f}')
+    print(f'{y[-1]:.12f}')
+    print(y[-1])

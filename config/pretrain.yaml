@@ -19,7 +19,7 @@ preprocess:
 
 training:
   num_worker: -1 # if -1, use os.cpu_count()
-  n_epoch: 100
+  n_epoch: 200
   batch_size: 32
   lr: 0.001
   temperature: 0.1

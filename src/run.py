@@ -109,8 +109,11 @@ def run(cfg):
     model = CLModel(cfg=preprocess_cfg, is_preprocess=True).to(device)
 
     optimizer = optim.Adam(model.parameters(), lr=1, amsgrad=False)
+    scheduler_update_num = 30
+    scheduler_update_step = (
+        n_epoch * (len(dataset)//batch_size)) // scheduler_update_num
     lr_scheduler_func = CosineDecayScheduler(
-        max_epochs=n_epoch, warmup_lr_limit=lr)
+        max_epochs=scheduler_update_num, warmup_lr_limit=lr)
     lr_scheduler = torch.optim.lr_scheduler.LambdaLR(
         optimizer, lr_lambda=lr_scheduler_func)
 
@@ -136,6 +139,7 @@ def run(cfg):
     best_loss_epoch = 10000
     best_loss_step = 10000
     global_step = 0
+    scheduler_step = 0
     for epoch in range(s_epoch, n_epoch):
         print(f'epoch: {epoch}')
 
@@ -160,8 +164,10 @@ def run(cfg):
             process_time = time.time() - s_time
 
             if step % 100 == 0:
-                print(
-                    f"Step [{step}/{len(dataloader)}], Loss: {loss.item()}, Time: {process_time}")
+                print(f"Step [{step}/{len(dataloader)}]",
+                      f"Loss: {loss.item()}",
+                      f"lr: {lr_scheduler.get_last_lr()}",
+                      f"Time: {process_time}")
 
                 if best_loss_step > loss.item():
                     best_loss_step = loss.item()
@@ -174,6 +180,12 @@ def run(cfg):
             loss_epoch += loss.item()
             global_step += 1
 
+            if scheduler_step == scheduler_update_step:
+                lr_scheduler.step()
+                scheduler_step = 0
+            else:
+                scheduler_step += 1
+
         loss_epoch /= len(dataloader)
 
         print(
@@ -181,7 +193,7 @@ def run(cfg):
 
         if not debug:
             writer.add_scalar("Loss/train", loss_epoch, epoch)
-            writer.add_scalar("learning_rate", lr, epoch)
+            # writer.add_scalar("learning_rate", lr, epoch)
 
             torch.save({
                 'epoch': epoch,
@@ -200,8 +212,6 @@ def run(cfg):
                 best_loss_epoch = loss_epoch
                 with open(model_path / 'best.pt', 'wb') as f:
                     torch.save(model.state_dict(), f)
-
-        lr_scheduler.step()
 
     if not debug:
         print(f'complete training: {model_path}')
