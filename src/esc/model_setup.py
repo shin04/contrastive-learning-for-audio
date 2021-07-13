@@ -36,7 +36,7 @@ def model_setup(
 
         base_model.load_state_dict(pretrained_model_state_dict)
 
-    model = ESC_Model(base_model, 512*600, 512, 50,
+    model = ESC_Model(base_model, 512*600, 128, 50,
                       use_pretrained, is_training)
 
     return model
