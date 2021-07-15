@@ -24,17 +24,19 @@ class ESC_Model(nn.Module):
         self.is_training = is_training
 
         self.flatten = nn.Flatten()
+        self.norm1 = nn.BatchNorm1d(in_channels)
         self.hidden_layer = nn.Linear(in_channels, hidden_dim)
-        self.norm = nn.BatchNorm1d(hidden_dim)
+        self.norm2 = nn.BatchNorm1d(hidden_dim)
         self.out_layer = nn.Linear(hidden_dim, out_channels)
 
     def forward(self, input):
         x = self.base_model(input)
         x = self.flatten(x)
 
+        x = self.norm1(x)
         x = self.hidden_layer(x)
-        x = self.norm(x)
         x = F.relu(x)
+        x = self.norm2(x)
         x = F.dropout(x, p=0.5, training=self.training)
 
         digit = self.out_layer(x)

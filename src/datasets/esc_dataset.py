@@ -28,6 +28,7 @@ class ESCDataset(Dataset):
         df = pd.read_csv(Path(metadata_path))
         self.waveforms = []
         self.labels = []
+
         for i in range(len(df)):
             df_fold = df.loc[i]['fold']
             p = self.audio_path / df.loc[i]['filename']

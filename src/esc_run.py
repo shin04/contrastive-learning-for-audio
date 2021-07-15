@@ -4,6 +4,7 @@ import os
 
 import hydra
 import numpy as np
+import matplotlib.pyplot as plt
 import torch
 from torch.utils.data import DataLoader
 import torch.optim as optim
@@ -14,6 +15,7 @@ from datasets.esc_dataset import ESCDataset
 from esc.training import train, valid
 from esc import prediction
 from esc.model_setup import model_setup
+from utils.callback import EarlyStopping
 
 TIME_TEMPLATE = '%Y%m%d%H%M%S'
 
@@ -46,6 +48,7 @@ def run(cfg):
     print('PATH')
     print('audio:', audio_path)
     print('meta:', meta_path)
+    print('pretrained model path:', pretrain_model_path)
     if not debug:
         print(f'tensorboard: {log_path}')
         print(f'result: {result_path}')
@@ -151,6 +154,7 @@ def run(cfg):
         ).to(device)
 
         """prepare optimizer and loss function"""
+        early_stopping = EarlyStopping(patience=15, verbose=True)
         optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=0.1)
         criterion = nn.CrossEntropyLoss()
 
@@ -174,10 +178,7 @@ def run(cfg):
             print(
                 f'epoch: {epoch}/{n_epoch}, '
                 f'train loss: {train_loss: .6f}, '
-                f'train acc: {train_acc: .6f}'
-            )
-            print(
-                f'epoch: {epoch}/{n_epoch}, '
+                f'train acc: {train_acc: .6f}, '
                 f'valid loss: {valid_loss: .6f}, '
                 f'valid acc: {valid_acc: .6f}'
             )
@@ -186,6 +187,11 @@ def run(cfg):
                 best_loss = train_loss
                 with open(weight_path, 'wb') as f:
                     torch.save(model.state_dict(), f)
+
+            early_stopping(valid_loss, model)
+            if early_stopping.early_stop:
+                print("Early stopping")
+                break
 
         fold_preds = prediction.predict(
             testloader, device, data_format, weight_path)
